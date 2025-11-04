@@ -1,7 +1,7 @@
 ---
 title: "[Spec] MSA Foundation Alignment"
 owner: product-strategist
-status: todo
+status: done
 priority: high
 due: 2025-11-04
 related_prompts:
