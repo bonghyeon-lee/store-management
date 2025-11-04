@@ -1,0 +1,15 @@
+# Example fragment & query. Assumes products field exists in schema
+
+fragment ProductFields on Product {
+  id
+  name
+  price
+}
+
+query Products {
+  products {
+    ...ProductFields
+  }
+}
+
+
