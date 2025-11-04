@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: store-management-apps
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: https://kubernetes.default.svc
+            env: staging
+            namespace: store-management-staging
+          - cluster: https://kubernetes.default.svc
+            env: production
+            namespace: store-management-production
+  template:
+    metadata:
+      name: 'store-management-{{env}}'
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/YOUR_ORG/store-management.git
+        targetRevision: main
+        path: infra/helm
+        helm:
+          valueFiles:
+            - values.yaml
+            - values-{{env}}.yaml
+      destination:
+        server: '{{cluster}}'
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+  revisionHistoryLimit: 10
+
