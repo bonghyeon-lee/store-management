@@ -28,6 +28,7 @@ interface EmployeeDetailPageProps {
 export const EmployeeDetailPage: React.FC<EmployeeDetailPageProps> = ({ employeeId }) => {
   const { data, loading, error } = useQuery(GET_EMPLOYEE, {
     variables: { id: employeeId },
+    errorPolicy: 'all',
   });
 
   if (loading) return <Loading message="직원 정보를 불러오는 중..." />;

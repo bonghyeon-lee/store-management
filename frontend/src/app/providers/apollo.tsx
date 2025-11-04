@@ -22,6 +22,8 @@ const authLink = setContext((_, { headers }) => {
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, extensions }) => {
+      console.error('GraphQL Error:', message, extensions);
+
       if (extensions?.code === 'UNAUTHENTICATED' || extensions?.code === 'TOKEN_EXPIRED') {
         // 인증 에러 시 토큰 제거
         tokenStorage.removeToken();
@@ -35,13 +37,17 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   }
 
   if (networkError) {
-    // 네트워크 에러 처리 (예: 401 응답)
-    if ('statusCode' in networkError && networkError.statusCode === 401) {
-      tokenStorage.removeToken();
-      localStorage.removeItem('auth_user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+    console.error('Network Error:', networkError);
+    // 네트워크 에러 처리 (예: 401, 400 응답)
+    if ('statusCode' in networkError) {
+      if (networkError.statusCode === 401) {
+        tokenStorage.removeToken();
+        localStorage.removeItem('auth_user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
+      // 400 에러는 GraphQL 쿼리 문제일 수 있으므로 로그만 남김
     }
   }
 });

@@ -6,8 +6,8 @@ import { Loading } from '@shared/ui/Loading';
 import { Button } from '@shared/ui/Button';
 
 const GET_EMPLOYEES = gql`
-  query GetEmployees($storeId: ID, $role: String, $status: EmploymentStatus) {
-    employees(storeId: $storeId, role: $role, status: $status) {
+  query GetEmployees($storeId: ID, $role: String) {
+    employees(storeId: $storeId, role: $role) {
       id
       name
       email
@@ -44,16 +44,13 @@ export const EmployeeListPage: React.FC = () => {
   const [role, setRole] = useState<string>('');
   const [status, setStatus] = useState<string>('');
 
-  const { data, loading, error, refetch } = useQuery<{ employees: Employee[] }>(
-    GET_EMPLOYEES,
-    {
-      variables: {
-        storeId: storeId || undefined,
-        role: role || undefined,
-        status: status || undefined,
-      },
+  const { data, loading, error, refetch } = useQuery<{ employees: Employee[] }>(GET_EMPLOYEES, {
+    variables: {
+      storeId: storeId || undefined,
+      role: role || undefined,
     },
-  );
+    errorPolicy: 'all',
+  });
 
   const [deleteEmployee] = useMutation(DELETE_EMPLOYEE, {
     onCompleted: () => {
@@ -73,21 +70,14 @@ export const EmployeeListPage: React.FC = () => {
   };
 
   if (loading) return <Loading message="직원 목록을 불러오는 중..." />;
-  if (error)
-    return (
-      <div style={{ padding: 20, color: 'red' }}>
-        오류: {error.message}
-      </div>
-    );
+  if (error) return <div style={{ padding: 20, color: 'red' }}>오류: {error.message}</div>;
 
   return (
     <ProtectedRoute>
       <div style={{ padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
           <h1>직원 목록</h1>
-          <Button onClick={() => (window.location.href = '/employees/new')}>
-            직원 추가
-          </Button>
+          <Button onClick={() => (window.location.href = '/employees/new')}>직원 추가</Button>
         </div>
 
         <div style={{ marginBottom: 20, display: 'flex', gap: 12 }}>
@@ -113,20 +103,7 @@ export const EmployeeListPage: React.FC = () => {
               border: '1px solid #ddd',
             }}
           />
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 6,
-              border: '1px solid #ddd',
-            }}
-          >
-            <option value="">전체 상태</option>
-            <option value="ACTIVE">활성</option>
-            <option value="INACTIVE">비활성</option>
-            <option value="TERMINATED">해고</option>
-          </select>
+          {/* 상태 필터는 백엔드 스키마에 없어서 제거 */}
           <Button onClick={() => refetch()}>검색</Button>
         </div>
 
@@ -153,9 +130,7 @@ export const EmployeeListPage: React.FC = () => {
               <p style={{ margin: '4px 0', fontSize: 14, color: '#666' }}>
                 전화: {employee.phone || '없음'}
               </p>
-              <p style={{ margin: '4px 0', fontSize: 14, color: '#666' }}>
-                역할: {employee.role}
-              </p>
+              <p style={{ margin: '4px 0', fontSize: 14, color: '#666' }}>역할: {employee.role}</p>
               <p style={{ margin: '4px 0', fontSize: 14, color: '#666' }}>
                 상태: {employee.employmentStatus}
               </p>
@@ -187,12 +162,9 @@ export const EmployeeListPage: React.FC = () => {
         </div>
 
         {data?.employees.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-            직원이 없습니다.
-          </div>
+          <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>직원이 없습니다.</div>
         )}
       </div>
     </ProtectedRoute>
   );
 };
-

@@ -70,6 +70,7 @@ export const EmployeeFormPage: React.FC<EmployeeFormPageProps> = ({ employeeId }
   const { data, loading: queryLoading } = useQuery(GET_EMPLOYEE, {
     variables: { id: employeeId },
     skip: !employeeId,
+    errorPolicy: 'all',
     onCompleted: (data) => {
       if (data?.employee) {
         setName(data.employee.name);

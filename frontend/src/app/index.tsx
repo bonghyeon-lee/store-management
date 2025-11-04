@@ -9,6 +9,10 @@ import { LoginPage } from '@pages/login/ui/LoginPage';
 import { EmployeeListPage } from '@pages/employees/ui/EmployeeListPage';
 import { EmployeeFormPage } from '@pages/employees/ui/EmployeeFormPage';
 import { EmployeeDetailPage } from '@pages/employees/ui/EmployeeDetailPage';
+import { AttendanceRecordsPage } from '@pages/attendance/ui/AttendanceRecordsPage';
+import { PendingApprovalsPage } from '@pages/attendance/ui/PendingApprovalsPage';
+import { DailyAttendanceReportPage } from '@pages/attendance/ui/DailyAttendanceReportPage';
+import { WeeklyAttendanceReportPage } from '@pages/attendance/ui/WeeklyAttendanceReportPage';
 
 // 간단한 라우터 구현
 const Router: React.FC = () => {
@@ -61,6 +65,22 @@ const Router: React.FC = () => {
 
   if (path === '/employees/new') {
     return <EmployeeFormPage />;
+  }
+
+  if (path === '/attendance' || path === '/attendance/') {
+    return <AttendanceRecordsPage />;
+  }
+
+  if (path === '/attendance/pending' || path === '/attendance/pending/') {
+    return <PendingApprovalsPage />;
+  }
+
+  if (path === '/attendance/reports/daily' || path === '/attendance/reports/daily/') {
+    return <DailyAttendanceReportPage />;
+  }
+
+  if (path === '/attendance/reports/weekly' || path === '/attendance/reports/weekly/') {
+    return <WeeklyAttendanceReportPage />;
   }
 
   return <HomePage />;
