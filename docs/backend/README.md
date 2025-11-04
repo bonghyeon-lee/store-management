@@ -54,6 +54,25 @@
 3. 계약 테스트(GraphQL Inspector): `graphql-inspector diff schema-old.graphql schema-new.graphql`
 4. 게이트웨이 로컬 통합 후 스모크 테스트 진행
 
+## 로컬 실행 가이드 (Subgraphs)
+
+- 사전 준비: 각 서비스 디렉터리에서 의존성 설치 후 실행
+  - Attendance
+    - 디렉터리: `backend/attendance-service`
+    - 설치: `npm install`
+    - 개발 실행: `npm run start:dev` (기본 포트 4001)
+  - Inventory
+    - 디렉터리: `backend/inventory-service`
+    - 설치: `npm install`
+    - 개발 실행: `npm run start:dev` (기본 포트 4002)
+  - Sales
+    - 디렉터리: `backend/sales-service`
+    - 설치: `npm install`
+    - 개발 실행: `npm run start:dev` (기본 포트 4003)
+
+- SDL-first 로딩: 각 서비스는 `schemas/*.graphql`를 `ApolloFederationDriver`로 로드합니다.
+- 참고: 실제 데이터 연동 전까지 Resolver는 목 구현으로 동작합니다.
+
 ## 데이터 관리
 
 - 트랜잭션: PostgreSQL, Prisma Transaction API
