@@ -150,11 +150,19 @@ jobs:
           cache-to: type=gha,mode=max
           load: true
 
+      - name: Extract first image tag
+        id: image-tag
+        run: |
+          TAGS="${{ steps.meta.outputs.tags }}"
+          FIRST_TAG=$(echo "$TAGS" | head -n 1)
+          echo "tag=$FIRST_TAG" >> $GITHUB_OUTPUT
+          echo "Using image tag: $FIRST_TAG"
+
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.meta.outputs.tags }}
+          image-ref: ${{ steps.image-tag.outputs.tag }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
@@ -169,10 +177,11 @@ jobs:
       - name: Trivy scan summary
         if: always()
         run: |
-          if [ -f "trivy-results.sarif" ]; then
-            trivy image --exit-code 0 --severity CRITICAL,HIGH --format table ${{ steps.meta.outputs.tags }} || true
+          if [ -f "trivy-results.sarif" ] && [ -s "trivy-results.sarif" ]; then
+            echo "Running Trivy scan summary for image: ${{ steps.image-tag.outputs.tag }}"
+            trivy image --exit-code 0 --severity CRITICAL,HIGH --format table ${{ steps.image-tag.outputs.tag }} || true
           else
-            echo "Trivy scan results not available"
+            echo "Trivy scan results not available (file missing or empty)"
           fi
 
   package-helm:
