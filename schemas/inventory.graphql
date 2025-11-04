@@ -1,0 +1,31 @@
+schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: [
+    "@key",
+    "@requires",
+    "@provides",
+    "@external"
+  ]) {
+  query: Query
+  mutation: Mutation
+}
+
+"재고 항목"
+type InventoryItem @key(fields: "storeId sku") {
+  storeId: ID!
+  sku: ID!
+  name: String!
+  quantity: Int!
+  reserved: Int!
+  updatedAt: String!
+}
+
+type Query {
+  inventoryItem(storeId: ID!, sku: ID!): InventoryItem
+}
+
+type Mutation {
+  adjustInventory(storeId: ID!, sku: ID!, delta: Int!, reason: String): InventoryItem!
+  reconcileInventory(storeId: ID!, sku: ID!, quantity: Int!, reason: String): InventoryItem!
+}
+
+

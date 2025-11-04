@@ -1,7 +1,7 @@
 ---
 title: "[Backend] Federation Schema Baseline"
 owner: backend-service
-status: todo
+status: in-progress
 priority: high
 due: 2025-11-08
 related_prompts:
@@ -22,8 +22,8 @@ related_prompts:
 
 ## 산출물
 
-- `schemas/attendance.graphql`, `schemas/inventory.graphql`, `schemas/sales.graphql` 초안
-- 설계 노트: `docs/backend/README.md` 업데이트
+- `schemas/attendance.graphql`, `schemas/inventory.graphql`, `schemas/sales.graphql` 초안 (생성됨)
+- 설계 노트: `docs/backend/README.md` 업데이트 (추가됨)
 - Schema Diff 리포트
 
 ## 검증

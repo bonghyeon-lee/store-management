@@ -1,0 +1,45 @@
+schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: ["@key", "@requires", "@provides", "@external"]
+  ) {
+  query: Query
+  mutation: Mutation
+}
+
+"출퇴근 기록"
+type Attendance @key(fields: "storeId employeeId date") {
+  storeId: ID!
+  employeeId: ID!
+  date: String!
+  "ISO-8601 (YYYY-MM-DD)"
+  checkInAt: String
+  checkOutAt: String
+  status: AttendanceStatus!
+  notes: String
+}
+
+enum AttendanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+type Query {
+  attendance(storeId: ID!, employeeId: ID!, date: String!): Attendance
+}
+
+type Mutation {
+  approveAttendance(
+    storeId: ID!
+    employeeId: ID!
+    date: String!
+    notes: String
+  ): Attendance!
+  requestAttendanceCorrection(
+    storeId: ID!
+    employeeId: ID!
+    date: String!
+    notes: String!
+  ): Attendance!
+}

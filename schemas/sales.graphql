@@ -1,0 +1,59 @@
+schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: [
+    "@key",
+    "@requires",
+    "@provides",
+    "@external"
+  ]) {
+  query: Query
+  mutation: Mutation
+}
+
+"주문"
+type Order @key(fields: "storeId orderId") {
+  storeId: ID!
+  orderId: ID!
+  createdAt: String!
+  totalAmount: Float!
+  currency: String!
+  status: OrderStatus!
+  lineItems: [LineItem!]!
+}
+
+type LineItem {
+  sku: ID!
+  name: String!
+  unitPrice: Float!
+  quantity: Int!
+  subtotal: Float!
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+type Query {
+  order(storeId: ID!, orderId: ID!): Order
+}
+
+type Mutation {
+  recordSale(
+    storeId: ID!,
+    orderId: ID!,
+    currency: String!,
+    lineItems: [RecordLineItemInput!]!
+  ): Order!
+  refundOrder(storeId: ID!, orderId: ID!, amount: Float!): Order!
+}
+
+input RecordLineItemInput {
+  sku: ID!
+  name: String!
+  unitPrice: Float!
+  quantity: Int!
+}
+
+
