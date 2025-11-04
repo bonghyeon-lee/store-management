@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
 import { ApolloProvider } from '@apollo/client';
 import { apolloClient } from '@app/providers/apollo';
+import { AttendanceRecordsPage } from '@pages/attendance/ui/AttendanceRecordsPage';
+import { DailyAttendanceReportPage } from '@pages/attendance/ui/DailyAttendanceReportPage';
+import { PendingApprovalsPage } from '@pages/attendance/ui/PendingApprovalsPage';
+import { WeeklyAttendanceReportPage } from '@pages/attendance/ui/WeeklyAttendanceReportPage';
+import { EmployeeDetailPage } from '@pages/employees/ui/EmployeeDetailPage';
+import { EmployeeFormPage } from '@pages/employees/ui/EmployeeFormPage';
+import { EmployeeListPage } from '@pages/employees/ui/EmployeeListPage';
+import { HomePage } from '@pages/home/ui/HomePage';
+import { LoginPage } from '@pages/login/ui/LoginPage';
 import { AuthProvider } from '@shared/lib/auth/auth-context';
 import { ErrorBoundary } from '@shared/ui/ErrorBoundary';
 import { Header } from '@widgets/header/ui/Header';
-import { HomePage } from '@pages/home/ui/HomePage';
-import { LoginPage } from '@pages/login/ui/LoginPage';
-import { EmployeeListPage } from '@pages/employees/ui/EmployeeListPage';
-import { EmployeeFormPage } from '@pages/employees/ui/EmployeeFormPage';
-import { EmployeeDetailPage } from '@pages/employees/ui/EmployeeDetailPage';
-import { AttendanceRecordsPage } from '@pages/attendance/ui/AttendanceRecordsPage';
-import { PendingApprovalsPage } from '@pages/attendance/ui/PendingApprovalsPage';
-import { DailyAttendanceReportPage } from '@pages/attendance/ui/DailyAttendanceReportPage';
-import { WeeklyAttendanceReportPage } from '@pages/attendance/ui/WeeklyAttendanceReportPage';
+import React, { useEffect, useState } from 'react';
 
 // 간단한 라우터 구현
 const Router: React.FC = () => {
@@ -53,12 +53,12 @@ const Router: React.FC = () => {
     return <EmployeeListPage />;
   }
 
-  const employeeMatch = path.match(/^\/employees\/([^\/]+)$/);
+  const employeeMatch = path.match(/^\/employees\/([^/]+)$/);
   if (employeeMatch) {
     return <EmployeeDetailPage employeeId={employeeMatch[1]} />;
   }
 
-  const employeeEditMatch = path.match(/^\/employees\/([^\/]+)\/edit$/);
+  const employeeEditMatch = path.match(/^\/employees\/([^/]+)\/edit$/);
   if (employeeEditMatch) {
     return <EmployeeFormPage employeeId={employeeEditMatch[1]} />;
   }
@@ -102,5 +102,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-
-

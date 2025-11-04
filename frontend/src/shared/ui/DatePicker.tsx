@@ -1,5 +1,4 @@
 import React from 'react';
-import { formatDate } from '@shared/lib/utils/date';
 
 interface DatePickerProps {
   value: string;

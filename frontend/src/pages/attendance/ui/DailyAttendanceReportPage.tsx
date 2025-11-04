@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
-import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { Loading } from '@shared/ui/Loading';
+import { gql,useQuery  } from '@apollo/client';
+import { formatDateTime , getToday } from '@shared/lib/utils/date';
 import { DatePicker } from '@shared/ui/DatePicker';
-import { formatDateTime } from '@shared/lib/utils/date';
-import { getToday } from '@shared/lib/utils/date';
+import { Loading } from '@shared/ui/Loading';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import React, { useState } from 'react';
 
 const GET_DAILY_ATTENDANCE_REPORT = gql`
   query GetDailyAttendanceReport($storeId: ID, $date: String!) {

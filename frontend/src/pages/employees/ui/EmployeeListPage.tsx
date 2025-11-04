@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { gql } from '@apollo/client';
-import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { Loading } from '@shared/ui/Loading';
+import { gql,useMutation,useQuery  } from '@apollo/client';
 import { Button } from '@shared/ui/Button';
+import { Loading } from '@shared/ui/Loading';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import React, { useState } from 'react';
 
 const GET_EMPLOYEES = gql`
   query GetEmployees($storeId: ID, $role: String) {
@@ -42,7 +41,6 @@ interface Employee {
 export const EmployeeListPage: React.FC = () => {
   const [storeId, setStoreId] = useState<string>('');
   const [role, setRole] = useState<string>('');
-  const [status, setStatus] = useState<string>('');
 
   const { data, loading, error, refetch } = useQuery<{ employees: Employee[] }>(GET_EMPLOYEES, {
     variables: {
@@ -63,7 +61,7 @@ export const EmployeeListPage: React.FC = () => {
       try {
         await deleteEmployee({ variables: { id } });
         alert('직원이 삭제되었습니다.');
-      } catch (err) {
+      } catch {
         alert('삭제 중 오류가 발생했습니다.');
       }
     }

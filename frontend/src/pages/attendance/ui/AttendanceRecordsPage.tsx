@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { gql } from '@apollo/client';
-import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { Loading } from '@shared/ui/Loading';
+import { gql,useMutation,useQuery  } from '@apollo/client';
+import { formatDateTime , getToday } from '@shared/lib/utils/date';
 import { Button } from '@shared/ui/Button';
 import { DateRangePicker } from '@shared/ui/DateRangePicker';
-import { formatDateTime } from '@shared/lib/utils/date';
-import { getToday } from '@shared/lib/utils/date';
+import { Loading } from '@shared/ui/Loading';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import React, { useState } from 'react';
 
 const GET_ATTENDANCE_RECORDS = gql`
   query GetAttendanceRecords(

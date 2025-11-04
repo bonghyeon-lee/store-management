@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
-import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { Loading } from '@shared/ui/Loading';
+import { gql,useMutation, useQuery  } from '@apollo/client';
 import { Button } from '@shared/ui/Button';
+import { Loading } from '@shared/ui/Loading';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import React, { useState } from 'react';
 
 const GET_EMPLOYEE = gql`
   query GetEmployee($id: ID!) {
@@ -67,7 +66,7 @@ export const EmployeeFormPage: React.FC<EmployeeFormPageProps> = ({ employeeId }
   const [assignedStoreIds, setAssignedStoreIds] = useState<string[]>([]);
   const [storeIdInput, setStoreIdInput] = useState('');
 
-  const { data, loading: queryLoading } = useQuery(GET_EMPLOYEE, {
+  const { loading: queryLoading } = useQuery(GET_EMPLOYEE, {
     variables: { id: employeeId },
     skip: !employeeId,
     errorPolicy: 'all',

@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
-import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { Loading } from '@shared/ui/Loading';
-import { DatePicker } from '@shared/ui/DatePicker';
+import { gql,useQuery  } from '@apollo/client';
 import { getWeekStart } from '@shared/lib/utils/date';
+import { DatePicker } from '@shared/ui/DatePicker';
+import { Loading } from '@shared/ui/Loading';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import React, { useState } from 'react';
 
 const GET_WEEKLY_ATTENDANCE_REPORT = gql`
   query GetWeeklyAttendanceReport($storeId: ID, $weekStart: String!) {

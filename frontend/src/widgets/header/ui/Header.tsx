@@ -1,6 +1,6 @@
-import React from 'react';
 import { useAuth } from '@shared/lib/auth/auth-context';
 import { Button } from '@shared/ui/Button';
+import React from 'react';
 
 export const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();

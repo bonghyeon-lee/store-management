@@ -1,22 +1,7 @@
-import React, { useState } from 'react';
 import { useAuth } from '@shared/lib/auth/auth-context';
-import { Button } from '@shared/ui/Button';
-import { apolloClient } from '@app/providers/apollo';
-import { gql } from '@apollo/client';
 import { generateDevJWT } from '@shared/lib/auth/jwt-utils';
-
-const LOGIN_MUTATION = gql`
-  mutation Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
-      token
-      user {
-        userId
-        role
-        storeIds
-      }
-    }
-  }
-`;
+import { Button } from '@shared/ui/Button';
+import React, { useState } from 'react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -97,9 +82,7 @@ export const LoginPage: React.FC = () => {
             required
           />
         </div>
-        {error && (
-          <div style={{ color: 'red', marginBottom: 16, fontSize: 14 }}>{error}</div>
-        )}
+        {error && <div style={{ color: 'red', marginBottom: 16, fontSize: 14 }}>{error}</div>}
         <Button type="submit" disabled={isLoading} style={{ width: '100%' }}>
           {isLoading ? '로그인 중...' : '로그인'}
         </Button>
@@ -110,4 +93,3 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
-

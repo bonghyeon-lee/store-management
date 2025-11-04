@@ -1,9 +1,9 @@
-import React from 'react';
-import { useQuery, gql } from '@apollo/client';
-import { Button } from '@shared/ui/Button';
+import { gql, useQuery } from '@apollo/client';
+import type { Product } from '@entities/product/model/types';
 import { AddToCartButton } from '@features/add-to-cart/ui/AddToCartButton';
 import { useAuth } from '@shared/lib/auth/auth-context';
-import type { Product } from '@entities/product/model/types';
+import { Button } from '@shared/ui/Button';
+import React from 'react';
 
 const ProductsQuery = gql`
   query Products {
@@ -17,7 +17,7 @@ const ProductsQuery = gql`
 
 export const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const { data, loading, error } = useQuery<{ products: any[] }>(ProductsQuery, {
+  const { data, loading, error } = useQuery<{ products: Product[] }>(ProductsQuery, {
     errorPolicy: 'all',
   });
 

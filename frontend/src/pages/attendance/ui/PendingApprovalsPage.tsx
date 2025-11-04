@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { gql } from '@apollo/client';
-import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { Loading } from '@shared/ui/Loading';
-import { Button } from '@shared/ui/Button';
+import { gql,useMutation,useQuery  } from '@apollo/client';
 import { formatDateTime } from '@shared/lib/utils/date';
+import { Button } from '@shared/ui/Button';
+import { Loading } from '@shared/ui/Loading';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import React, { useState } from 'react';
 
 const GET_PENDING_APPROVALS = gql`
   query GetPendingApprovals($storeId: ID, $managerId: ID) {

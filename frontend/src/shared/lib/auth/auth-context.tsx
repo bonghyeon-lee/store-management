@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useCallback,useContext, useEffect, useState } from 'react';
+
 import { tokenStorage } from './token-storage';
 
 interface User {
@@ -47,7 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser));
-        } catch (error) {
+        } catch {
           // 파싱 실패 시 토큰 제거
           tokenStorage.removeToken();
         }

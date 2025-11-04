@@ -1,5 +1,6 @@
-import React from 'react';
 import { useAuth } from '@shared/lib/auth/auth-context';
+import React from 'react';
+
 import { Loading } from './Loading';
 
 interface ProtectedRouteProps {

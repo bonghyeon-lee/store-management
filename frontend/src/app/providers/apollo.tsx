@@ -1,4 +1,4 @@
-import { ApolloClient, HttpLink, InMemoryCache, from } from '@apollo/client';
+import { ApolloClient, from, HttpLink, InMemoryCache } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { tokenStorage } from '@shared/lib/auth/token-storage';
@@ -19,7 +19,7 @@ const authLink = setContext((_, { headers }) => {
 });
 
 // 에러 처리 (401 에러 시 토큰 제거)
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, extensions }) => {
       console.error('GraphQL Error:', message, extensions);

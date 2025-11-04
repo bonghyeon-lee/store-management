@@ -1,9 +1,8 @@
-import React from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
-import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { Loading } from '@shared/ui/Loading';
+import { gql,useQuery  } from '@apollo/client';
 import { Button } from '@shared/ui/Button';
+import { Loading } from '@shared/ui/Loading';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import React from 'react';
 
 const GET_EMPLOYEE = gql`
   query GetEmployee($id: ID!) {
