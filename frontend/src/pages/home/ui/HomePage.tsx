@@ -10,7 +10,7 @@ const ProductsQuery = gql`
     products {
       id
       name
-      price
+      unitPrice
     }
   }
 `;
@@ -49,10 +49,10 @@ export const HomePage: React.FC = () => {
 
       <h2>상품 목록</h2>
       <ul style={{ listStyle: 'none', padding: 0 }}>
-        {data?.products?.map((p: any) => (
+        {data?.products?.map((p: Product) => (
           <li key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
             <span>
-              {p.name} - ₩{p.price?.toLocaleString('ko-KR')}
+              {p.name} - ₩{p.unitPrice?.toLocaleString('ko-KR')}
             </span>
             <AddToCartButton productId={p.id} />
           </li>

@@ -3,7 +3,7 @@
 fragment ProductFields on Product {
   id
   name
-  price
+  unitPrice
 }
 
 query Products {
@@ -11,5 +11,3 @@ query Products {
     ...ProductFields
   }
 }
-
-
