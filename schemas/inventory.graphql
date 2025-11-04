@@ -21,11 +21,19 @@ type InventoryItem @key(fields: "storeId sku") {
 
 type Query {
   inventoryItem(storeId: ID!, sku: ID!): InventoryItem
+  products: [Product!]!
 }
 
 type Mutation {
   adjustInventory(storeId: ID!, sku: ID!, delta: Int!, reason: String): InventoryItem!
   reconcileInventory(storeId: ID!, sku: ID!, quantity: Int!, reason: String): InventoryItem!
+}
+
+"상품"
+type Product @key(fields: "id") {
+  id: ID!
+  name: String!
+  price: Int!
 }
 
 

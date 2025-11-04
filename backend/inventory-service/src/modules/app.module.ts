@@ -5,6 +5,7 @@ import {
   ApolloFederationDriverConfig,
 } from '@nestjs/apollo';
 import { InventoryResolver } from '../resolvers/inventory.resolver';
+import { ProductResolver } from '../resolvers/product.resolver';
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { InventoryResolver } from '../resolvers/inventory.resolver';
       sortSchema: true,
     }),
   ],
-  providers: [InventoryResolver],
+  providers: [InventoryResolver, ProductResolver],
 })
 export class AppModule {}

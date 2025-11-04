@@ -1,11 +1,10 @@
 import React from 'react';
-import { useQuery } from '@apollo/client';
-import { graphql } from '@shared/api/generated/gql';
+import { useQuery, gql } from '@apollo/client';
 import { Button } from '@shared/ui/Button';
 import { AddToCartButton } from '@features/add-to-cart/ui/AddToCartButton';
 import type { Product } from '@entities/product/model/types';
 
-const ProductsQuery = graphql(/* GraphQL */ `
+const ProductsQuery = gql`
   query Products {
     products {
       id
@@ -13,7 +12,7 @@ const ProductsQuery = graphql(/* GraphQL */ `
       price
     }
   }
-`);
+`;
 
 export const HomePage: React.FC = () => {
   const { data, loading, error } = useQuery<{ products: Product[] }>(ProductsQuery);
