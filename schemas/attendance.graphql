@@ -36,8 +36,8 @@ type Attendance @key(fields: "storeId employeeId date") {
   checkOutAt: String
   status: AttendanceStatus!
   notes: String
-  workingHours: Float
   "근무 시간 (시간 단위)"
+  workingHours: Float
 }
 
 enum AttendanceStatus {

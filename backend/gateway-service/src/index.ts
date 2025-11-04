@@ -1,7 +1,7 @@
 import cors from 'cors';
 import express, { Request } from 'express';
 import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
+import { expressMiddleware } from '@as-integrations/express4';
 import { ApolloGateway, IntrospectAndCompose } from '@apollo/gateway';
 import {
   authMiddleware,

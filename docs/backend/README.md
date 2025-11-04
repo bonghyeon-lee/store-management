@@ -13,7 +13,7 @@
 
 ## 공통 기술 스택
 
-- NestJS 10, TypeScript, GraphQL Code First + Schema Registry
+- NestJS 10, TypeScript, GraphQL Code First (TypeScript Decorators)
 - ORM: Prisma (권장) 혹은 TypeORM
 - Messaging: Kafka, BullMQ (백그라운드 작업)
 - Observability: OpenTelemetry SDK, Winston 로깅
@@ -32,9 +32,17 @@
 - Schema 변경은 Contract Test와 Schema Registry Diff 체크 필수
 - Subscriptions는 Redis Pub/Sub 또는 Kafka 기반 어댑터 사용
 
+## GraphQL Code First 방식
+
+- 각 서비스는 TypeScript 데코레이터를 사용하여 GraphQL 스키마를 정의합니다
+- 타입 정의는 `src/models/` 디렉터리에 위치합니다
+- `@ObjectType()`, `@InputType()`, `@Field()` 등의 데코레이터를 사용합니다
+- `autoSchemaFile` 옵션으로 스키마 파일이 자동 생성됩니다
+- Federation 디렉티브는 `@Directive()` 데코레이터로 적용합니다
+
 ## Federation 설계 노트
 
-- Subgraph 스키마 위치: `schemas/attendance.graphql`, `schemas/inventory.graphql`, `schemas/sales.graphql`
+- Subgraph 스키마는 Code First 방식으로 자동 생성됩니다 (`schema.gql`)
 - 키 전략
   - Attendance: `@key(fields: "storeId employeeId date")`
   - InventoryItem: `@key(fields: "storeId sku")`
@@ -70,7 +78,7 @@
     - 설치: `npm install`
     - 개발 실행: `npm run start:dev` (기본 포트 4003)
 
-- SDL-first 로딩: 각 서비스는 `schemas/*.graphql`를 `ApolloFederationDriver`로 로드합니다.
+- Code First 방식: 각 서비스는 TypeScript 데코레이터로 스키마를 정의하고 `autoSchemaFile`로 자동 생성합니다.
 - 참고: 실제 데이터 연동 전까지 Resolver는 목 구현으로 동작합니다.
 
 ## 데이터 관리

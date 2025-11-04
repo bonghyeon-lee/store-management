@@ -1,15 +1,6 @@
 import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
-
-interface Product {
-  id: string;
-  name: string;
-  description?: string | null;
-  unitPrice: number;
-  category?: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Product } from '../models/product.model';
+import { CreateSKUInput, UpdateSKUInput } from '../models/inputs.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
 const products: Map<string, Product> = new Map();
@@ -51,17 +42,17 @@ const initializeSampleData = () => {
 
 initializeSampleData();
 
-@Resolver('Product')
+@Resolver(() => Product)
 export class ProductResolver {
-  @Query('sku')
+  @Query(() => Product, { nullable: true, description: 'SKU 조회' })
   sku(@Args('id') id: string): Product | null {
     return products.get(id) || null;
   }
 
-  @Query('skus')
+  @Query(() => [Product], { description: 'SKU 목록 조회' })
   skus(
-    @Args('category') category?: string,
-    @Args('isActive') isActive?: boolean
+    @Args('category', { nullable: true }) category?: string,
+    @Args('isActive', { nullable: true }) isActive?: boolean
   ): Product[] {
     let result = Array.from(products.values());
 
@@ -76,30 +67,22 @@ export class ProductResolver {
     return result;
   }
 
-  @Query('products')
+  @Query(() => [Product], { description: '상품 목록 (기존 호환)' })
   products(): Product[] {
     return Array.from(products.values());
   }
 
-  @Mutation('createSKU')
-  createSKU(
-    @Args('input')
-    input: {
-      name: string;
-      description?: string;
-      unitPrice: number;
-      category?: string;
-    }
-  ): Product {
+  @Mutation(() => Product, { description: 'SKU 생성' })
+  createSKU(@Args('input') input: CreateSKUInput): Product {
     const id = `SKU-${String(products.size + 1).padStart(3, '0')}`;
     const now = new Date().toISOString();
 
     const product: Product = {
       id,
       name: input.name,
-      description: input.description || null,
+      description: input.description,
       unitPrice: input.unitPrice,
-      category: input.category || null,
+      category: input.category,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -109,17 +92,10 @@ export class ProductResolver {
     return product;
   }
 
-  @Mutation('updateSKU')
+  @Mutation(() => Product, { description: 'SKU 정보 수정' })
   updateSKU(
     @Args('id') id: string,
-    @Args('input')
-    input: {
-      name?: string;
-      description?: string;
-      unitPrice?: number;
-      category?: string;
-      isActive?: boolean;
-    }
+    @Args('input') input: UpdateSKUInput
   ): Product {
     const product = products.get(id);
     if (!product) {
@@ -130,11 +106,11 @@ export class ProductResolver {
       ...product,
       ...(input.name && { name: input.name }),
       ...(input.description !== undefined && {
-        description: input.description || null,
+        description: input.description,
       }),
       ...(input.unitPrice !== undefined && { unitPrice: input.unitPrice }),
       ...(input.category !== undefined && {
-        category: input.category || null,
+        category: input.category,
       }),
       ...(input.isActive !== undefined && { isActive: input.isActive }),
       updatedAt: new Date().toISOString(),
@@ -144,7 +120,7 @@ export class ProductResolver {
     return updated;
   }
 
-  @Mutation('deleteSKU')
+  @Mutation(() => Boolean, { description: 'SKU 삭제/비활성화' })
   deleteSKU(@Args('id') id: string): boolean {
     const product = products.get(id);
     if (!product) {

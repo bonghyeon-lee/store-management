@@ -1,0 +1,197 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type ChannelSales {
+  channel: String!
+  totalSales: Float!
+  transactionCount: Float!
+}
+
+"""일별 매출 집계"""
+type DailySales {
+  """평균 거래액"""
+  averageTransactionValue: Float!
+
+  """채널별 매출 분류"""
+  channelBreakdown: [ChannelSales!]!
+
+  """날짜 (YYYY-MM-DD)"""
+  date: String!
+  storeId: ID
+
+  """총 매출"""
+  totalSales: Float!
+
+  """거래 건수"""
+  transactionCount: Float!
+}
+
+type LineItem {
+  name: String!
+  quantity: Float!
+  sku: ID!
+  subtotal: Float!
+  unitPrice: Float!
+}
+
+"""월별 매출 집계"""
+type MonthlySales {
+  averageTransactionValue: Float!
+
+  """일별 상세 데이터"""
+  dailySales: [DailySales!]!
+
+  """증감률 (전월 대비, %)"""
+  growthRate: Float
+  month: Float!
+
+  """전월 매출"""
+  previousMonthSales: Float
+  storeId: ID
+  totalSales: Float!
+  transactionCount: Float!
+  year: Float!
+}
+
+type Mutation {
+  """매출 기록 (단일)"""
+  recordSale(channel: String!, currency: String!, lineItems: [RecordLineItemInput!]!, orderId: String!, settledAt: String, storeId: String!): Order!
+
+  """매출 기록 (배치)"""
+  recordSalesBatch(sales: [RecordSaleInput!]!): [Order!]!
+
+  """주문 환불"""
+  refundOrder(amount: Float!, orderId: String!, storeId: String!): Order!
+}
+
+"""주문"""
+type Order {
+  """판매 채널 (POS, ONLINE, MOBILE 등)"""
+  channel: String!
+  createdAt: String!
+  currency: String!
+  lineItems: [LineItem!]!
+  orderId: ID!
+
+  """결제 완료 일시 (ISO-8601)"""
+  settledAt: String
+  status: OrderStatus!
+  storeId: ID!
+  totalAmount: Float!
+}
+
+enum OrderStatus {
+  CANCELLED
+  PAID
+  PENDING
+  REFUNDED
+}
+
+type Query {
+  """일별 매출 집계"""
+  dailySales(
+    """YYYY-MM-DD"""
+    date: String!
+    storeId: String
+  ): DailySales!
+
+  """월별 매출 집계"""
+  monthlySales(month: Float!, storeId: String, year: Float!): MonthlySales!
+
+  """주문 조회"""
+  order(orderId: String!, storeId: String!): Order
+
+  """주문 목록 조회"""
+  orders(channel: String, endDate: String!, startDate: String!, status: OrderStatus, storeId: String): [Order!]!
+
+  """매출 대시보드"""
+  salesDashboard(endDate: String!, startDate: String!, storeId: String): SalesDashboard!
+
+  """주별 매출 집계"""
+  weeklySales(
+    storeId: String
+
+    """YYYY-MM-DD (주 시작일)"""
+    weekStart: String!
+  ): WeeklySales!
+}
+
+input RecordLineItemInput {
+  name: String!
+  quantity: Float!
+  sku: ID!
+  unitPrice: Float!
+}
+
+input RecordSaleInput {
+  channel: String!
+  currency: String!
+  lineItems: [RecordLineItemInput!]!
+  orderId: ID!
+
+  """ISO-8601"""
+  settledAt: String
+  storeId: ID!
+}
+
+"""매출 대시보드"""
+type SalesDashboard {
+  """평균 거래액"""
+  averageTransactionValue: Float!
+
+  """하위 성과 지점"""
+  bottomStores: [StoreSalesSummary!]!
+
+  """채널별 매출 분포"""
+  channelDistribution: [ChannelSales!]!
+
+  """기간 (YYYY-MM-DD ~ YYYY-MM-DD)"""
+  period: String!
+
+  """지점별 요약"""
+  storeSummary: [StoreSalesSummary!]!
+
+  """상위 성과 지점"""
+  topStores: [StoreSalesSummary!]!
+
+  """총 매출"""
+  totalSales: Float!
+
+  """총 거래 건수"""
+  totalTransactions: Float!
+
+  """기간별 트렌드"""
+  trend: [DailySales!]!
+}
+
+"""지점별 매출 요약"""
+type StoreSalesSummary {
+  averageTransactionValue: Float!
+  storeId: ID!
+  totalSales: Float!
+  transactionCount: Float!
+}
+
+"""주별 매출 집계"""
+type WeeklySales {
+  averageTransactionValue: Float!
+
+  """일별 상세 데이터"""
+  dailySales: [DailySales!]!
+
+  """증감률 (전주 대비, %)"""
+  growthRate: Float
+
+  """전주 매출"""
+  previousWeekSales: Float
+  storeId: ID
+  totalSales: Float!
+  transactionCount: Float!
+
+  """주 종료일 (YYYY-MM-DD)"""
+  weekEnd: String!
+
+  """주 시작일 (YYYY-MM-DD)"""
+  weekStart: String!
+}

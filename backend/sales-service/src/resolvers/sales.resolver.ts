@@ -1,86 +1,16 @@
 import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
-
-type OrderStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'CANCELLED';
-
-interface LineItem {
-  sku: string;
-  name: string;
-  unitPrice: number;
-  quantity: number;
-  subtotal: number;
-}
-
-interface Order {
-  storeId: string;
-  orderId: string;
-  createdAt: string;
-  settledAt: string | null;
-  totalAmount: number;
-  currency: string;
-  status: OrderStatus;
-  channel: string;
-  lineItems: LineItem[];
-}
-
-interface DailySales {
-  date: string;
-  storeId: string | null;
-  totalSales: number;
-  transactionCount: number;
-  averageTransactionValue: number;
-  channelBreakdown: Array<{
-    channel: string;
-    totalSales: number;
-    transactionCount: number;
-  }>;
-}
-
-interface WeeklySales {
-  weekStart: string;
-  weekEnd: string;
-  storeId: string | null;
-  totalSales: number;
-  transactionCount: number;
-  averageTransactionValue: number;
-  previousWeekSales: number | null;
-  growthRate: number | null;
-  dailySales: DailySales[];
-}
-
-interface MonthlySales {
-  year: number;
-  month: number;
-  storeId: string | null;
-  totalSales: number;
-  transactionCount: number;
-  averageTransactionValue: number;
-  previousMonthSales: number | null;
-  growthRate: number | null;
-  dailySales: DailySales[];
-}
-
-interface StoreSalesSummary {
-  storeId: string;
-  totalSales: number;
-  transactionCount: number;
-  averageTransactionValue: number;
-}
-
-interface SalesDashboard {
-  period: string;
-  totalSales: number;
-  totalTransactions: number;
-  averageTransactionValue: number;
-  storeSummary: StoreSalesSummary[];
-  topStores: StoreSalesSummary[];
-  bottomStores: StoreSalesSummary[];
-  channelDistribution: Array<{
-    channel: string;
-    totalSales: number;
-    transactionCount: number;
-  }>;
-  trend: DailySales[];
-}
+import {
+  Order,
+  OrderStatus,
+  LineItem,
+  DailySales,
+  WeeklySales,
+  MonthlySales,
+  SalesDashboard,
+  StoreSalesSummary,
+  RecordLineItemInput,
+  RecordSaleInput,
+} from '../models/sales.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
 const orders: Map<string, Order> = new Map();
@@ -149,9 +79,9 @@ const getPreviousMonth = (
   return { year, month: month - 1 };
 };
 
-@Resolver('Order')
+@Resolver(() => Order)
 export class SalesResolver {
-  @Query('order')
+  @Query(() => Order, { nullable: true, description: '주문 조회' })
   order(
     @Args('storeId') storeId: string,
     @Args('orderId') orderId: string
@@ -160,13 +90,14 @@ export class SalesResolver {
     return orders.get(key) || null;
   }
 
-  @Query('orders')
+  @Query(() => [Order], { description: '주문 목록 조회' })
   orders(
-    @Args('storeId') storeId: string | undefined,
     @Args('startDate') startDate: string,
     @Args('endDate') endDate: string,
-    @Args('channel') channel: string | undefined,
-    @Args('status') status: OrderStatus | undefined
+    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('channel', { nullable: true }) channel?: string,
+    @Args('status', { type: () => OrderStatus, nullable: true })
+    status?: OrderStatus
   ): Order[] {
     let result = Array.from(orders.values());
 
@@ -190,20 +121,15 @@ export class SalesResolver {
     return result;
   }
 
-  @Mutation('recordSale')
+  @Mutation(() => Order, { description: '매출 기록 (단일)' })
   recordSale(
     @Args('storeId') storeId: string,
     @Args('orderId') orderId: string,
     @Args('currency') currency: string,
     @Args('channel') channel: string,
-    @Args('lineItems')
-    lineItems: Array<{
-      sku: string;
-      name: string;
-      unitPrice: number;
-      quantity: number;
-    }>,
-    @Args('settledAt') settledAt: string | undefined
+    @Args('lineItems', { type: () => [RecordLineItemInput] })
+    lineItems: RecordLineItemInput[],
+    @Args('settledAt', { nullable: true }) settledAt?: string
   ): Order {
     const items: LineItem[] = lineItems.map((li) => ({
       ...li,
@@ -219,7 +145,7 @@ export class SalesResolver {
       settledAt: settledAt || now,
       totalAmount,
       currency,
-      status: 'PAID',
+      status: OrderStatus.PAID,
       channel,
       lineItems: items,
     };
@@ -229,22 +155,9 @@ export class SalesResolver {
     return order;
   }
 
-  @Mutation('recordSalesBatch')
+  @Mutation(() => [Order], { description: '매출 기록 (배치)' })
   recordSalesBatch(
-    @Args('sales')
-    sales: Array<{
-      storeId: string;
-      orderId: string;
-      currency: string;
-      channel: string;
-      lineItems: Array<{
-        sku: string;
-        name: string;
-        unitPrice: number;
-        quantity: number;
-      }>;
-      settledAt?: string;
-    }>
+    @Args('sales', { type: () => [RecordSaleInput] }) sales: RecordSaleInput[]
   ): Order[] {
     return sales.map((sale) => {
       const items: LineItem[] = sale.lineItems.map((li) => ({
@@ -261,7 +174,7 @@ export class SalesResolver {
         settledAt: sale.settledAt || now,
         totalAmount,
         currency: sale.currency,
-        status: 'PAID',
+        status: OrderStatus.PAID,
         channel: sale.channel,
         lineItems: items,
       };
@@ -272,7 +185,7 @@ export class SalesResolver {
     });
   }
 
-  @Mutation('refundOrder')
+  @Mutation(() => Order, { description: '주문 환불' })
   refundOrder(
     @Args('storeId') storeId: string,
     @Args('orderId') orderId: string,
@@ -287,7 +200,7 @@ export class SalesResolver {
 
     const refunded: Order = {
       ...existing,
-      status: 'REFUNDED',
+      status: OrderStatus.REFUNDED,
       totalAmount: -Math.abs(amount),
       lineItems: [],
     };
@@ -296,15 +209,15 @@ export class SalesResolver {
     return refunded;
   }
 
-  @Query('dailySales')
+  @Query(() => DailySales, { description: '일별 매출 집계' })
   dailySales(
-    @Args('storeId') storeId: string | undefined,
-    @Args('date') date: string
+    @Args('date', { description: 'YYYY-MM-DD' }) date: string,
+    @Args('storeId', { nullable: true }) storeId?: string
   ): DailySales {
     const ordersList = Array.from(orders.values());
     let filtered = ordersList.filter((order) => {
       const orderDate = order.createdAt.split('T')[0];
-      return orderDate === date && order.status === 'PAID';
+      return orderDate === date && order.status === OrderStatus.PAID;
     });
 
     if (storeId) {
@@ -341,7 +254,7 @@ export class SalesResolver {
 
     return {
       date,
-      storeId: storeId || null,
+      storeId,
       totalSales: Math.round(totalSales * 100) / 100,
       transactionCount,
       averageTransactionValue: Math.round(averageTransactionValue * 100) / 100,
@@ -349,10 +262,11 @@ export class SalesResolver {
     };
   }
 
-  @Query('weeklySales')
+  @Query(() => WeeklySales, { description: '주별 매출 집계' })
   weeklySales(
-    @Args('storeId') storeId: string | undefined,
-    @Args('weekStart') weekStart: string
+    @Args('weekStart', { description: 'YYYY-MM-DD (주 시작일)' })
+    weekStart: string,
+    @Args('storeId', { nullable: true }) storeId?: string
   ): WeeklySales {
     const weekEnd = getWeekEnd(weekStart);
     const weekDates = getWeekDates(weekStart);
@@ -360,7 +274,7 @@ export class SalesResolver {
 
     // 주간 데이터 집계
     const dailySalesList: DailySales[] = weekDates.map((date) =>
-      this.dailySales(storeId, date)
+      this.dailySales(date, storeId)
     );
 
     const totalSales = dailySalesList.reduce(
@@ -375,10 +289,7 @@ export class SalesResolver {
       transactionCount > 0 ? totalSales / transactionCount : 0;
 
     // 전주 데이터
-    const previousWeekDailySales = this.dailySales(
-      storeId,
-      previousWeekStart
-    );
+    const previousWeekDailySales = this.dailySales(previousWeekStart, storeId);
     const previousWeekSales = previousWeekDailySales.totalSales;
     const growthRate =
       previousWeekSales > 0
@@ -388,28 +299,28 @@ export class SalesResolver {
     return {
       weekStart,
       weekEnd,
-      storeId: storeId || null,
+      storeId,
       totalSales: Math.round(totalSales * 100) / 100,
       transactionCount,
       averageTransactionValue: Math.round(averageTransactionValue * 100) / 100,
       previousWeekSales,
-      growthRate: growthRate ? Math.round(growthRate * 100) / 100 : null,
+      growthRate: growthRate ? Math.round(growthRate * 100) / 100 : undefined,
       dailySales: dailySalesList,
     };
   }
 
-  @Query('monthlySales')
+  @Query(() => MonthlySales, { description: '월별 매출 집계' })
   monthlySales(
-    @Args('storeId') storeId: string | undefined,
     @Args('year') year: number,
-    @Args('month') month: number
+    @Args('month') month: number,
+    @Args('storeId', { nullable: true }) storeId?: string
   ): MonthlySales {
     const monthDates = getMonthDates(year, month);
     const previousMonth = getPreviousMonth(year, month);
 
     // 월간 데이터 집계
     const dailySalesList: DailySales[] = monthDates.map((date) =>
-      this.dailySales(storeId, date)
+      this.dailySales(date, storeId)
     );
 
     const totalSales = dailySalesList.reduce(
@@ -428,8 +339,8 @@ export class SalesResolver {
       previousMonth.month
     ).padStart(2, '0')}-01`;
     const previousMonthDailySales = this.dailySales(
-      storeId,
-      previousMonthFirstDay
+      previousMonthFirstDay,
+      storeId
     );
     const previousMonthSales = previousMonthDailySales.totalSales;
     const growthRate =
@@ -440,21 +351,21 @@ export class SalesResolver {
     return {
       year,
       month,
-      storeId: storeId || null,
+      storeId,
       totalSales: Math.round(totalSales * 100) / 100,
       transactionCount,
       averageTransactionValue: Math.round(averageTransactionValue * 100) / 100,
       previousMonthSales,
-      growthRate: growthRate ? Math.round(growthRate * 100) / 100 : null,
+      growthRate: growthRate ? Math.round(growthRate * 100) / 100 : undefined,
       dailySales: dailySalesList,
     };
   }
 
-  @Query('salesDashboard')
+  @Query(() => SalesDashboard, { description: '매출 대시보드' })
   salesDashboard(
-    @Args('storeId') storeId: string | undefined,
     @Args('startDate') startDate: string,
-    @Args('endDate') endDate: string
+    @Args('endDate') endDate: string,
+    @Args('storeId', { nullable: true }) storeId?: string
   ): SalesDashboard {
     const ordersList = Array.from(orders.values());
     let filtered = ordersList.filter((order) => {
@@ -462,7 +373,7 @@ export class SalesResolver {
       return (
         orderDate >= startDate &&
         orderDate <= endDate &&
-        order.status === 'PAID'
+        order.status === OrderStatus.PAID
       );
     });
 
@@ -536,7 +447,7 @@ export class SalesResolver {
     }
 
     const trend: DailySales[] = trendDates.map((date) =>
-      this.dailySales(storeId, date)
+      this.dailySales(date, storeId)
     );
 
     return {

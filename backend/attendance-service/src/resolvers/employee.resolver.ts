@@ -1,18 +1,9 @@
-import { Query, Resolver, Args, Mutation, InputType, Field } from '@nestjs/graphql';
-
-type EmploymentStatus = 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
-
-interface Employee {
-  id: string;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  role: string;
-  employmentStatus: EmploymentStatus;
-  assignedStoreIds: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
+import { Employee, EmploymentStatus } from '../models/employee.model';
+import {
+  CreateEmployeeInput,
+  UpdateEmployeeInput,
+} from '../models/inputs.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
 const employees: Map<string, Employee> = new Map();
@@ -26,7 +17,7 @@ const initializeSampleData = () => {
     email: 'hong@example.com',
     phone: '010-1234-5678',
     role: 'STORE_MANAGER',
-    employmentStatus: 'ACTIVE',
+    employmentStatus: EmploymentStatus.ACTIVE,
     assignedStoreIds: ['STORE-001'],
     createdAt: now,
     updatedAt: now,
@@ -37,7 +28,7 @@ const initializeSampleData = () => {
     email: 'kim@example.com',
     phone: '010-2345-6789',
     role: 'EMPLOYEE',
-    employmentStatus: 'ACTIVE',
+    employmentStatus: EmploymentStatus.ACTIVE,
     assignedStoreIds: ['STORE-001'],
     createdAt: now,
     updatedAt: now,
@@ -46,18 +37,19 @@ const initializeSampleData = () => {
 
 initializeSampleData();
 
-@Resolver('Employee')
+@Resolver(() => Employee)
 export class EmployeeResolver {
-  @Query('employee')
+  @Query(() => Employee, { nullable: true, description: '직원 조회' })
   employee(@Args('id') id: string): Employee | null {
     return employees.get(id) || null;
   }
 
-  @Query('employees')
+  @Query(() => [Employee], { description: '직원 목록 조회' })
   employees(
-    @Args('storeId') storeId?: string,
-    @Args('role') role?: string,
-    @Args('status') status?: EmploymentStatus,
+    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('role', { nullable: true }) role?: string,
+    @Args('status', { type: () => EmploymentStatus, nullable: true })
+    status?: EmploymentStatus
   ): Employee[] {
     let result = Array.from(employees.values());
 
@@ -75,27 +67,18 @@ export class EmployeeResolver {
     return result;
   }
 
-  @Mutation('createEmployee')
-  createEmployee(
-    @Args('input')
-    input: {
-      name: string;
-      email?: string;
-      phone?: string;
-      role: string;
-      assignedStoreIds: string[];
-    },
-  ): Employee {
+  @Mutation(() => Employee, { description: '직원 생성' })
+  createEmployee(@Args('input') input: CreateEmployeeInput): Employee {
     const id = `EMP-${String(employees.size + 1).padStart(3, '0')}`;
     const now = new Date().toISOString();
 
     const employee: Employee = {
       id,
       name: input.name,
-      email: input.email || null,
-      phone: input.phone || null,
+      email: input.email,
+      phone: input.phone,
       role: input.role,
-      employmentStatus: 'ACTIVE',
+      employmentStatus: EmploymentStatus.ACTIVE,
       assignedStoreIds: input.assignedStoreIds,
       createdAt: now,
       updatedAt: now,
@@ -105,18 +88,10 @@ export class EmployeeResolver {
     return employee;
   }
 
-  @Mutation('updateEmployee')
+  @Mutation(() => Employee, { description: '직원 정보 수정' })
   updateEmployee(
     @Args('id') id: string,
-    @Args('input')
-    input: {
-      name?: string;
-      email?: string;
-      phone?: string;
-      role?: string;
-      employmentStatus?: EmploymentStatus;
-      assignedStoreIds?: string[];
-    },
+    @Args('input') input: UpdateEmployeeInput
   ): Employee {
     const employee = employees.get(id);
     if (!employee) {
@@ -126,11 +101,15 @@ export class EmployeeResolver {
     const updated: Employee = {
       ...employee,
       ...(input.name && { name: input.name }),
-      ...(input.email !== undefined && { email: input.email || null }),
-      ...(input.phone !== undefined && { phone: input.phone || null }),
+      ...(input.email !== undefined && { email: input.email }),
+      ...(input.phone !== undefined && { phone: input.phone }),
       ...(input.role && { role: input.role }),
-      ...(input.employmentStatus && { employmentStatus: input.employmentStatus }),
-      ...(input.assignedStoreIds && { assignedStoreIds: input.assignedStoreIds }),
+      ...(input.employmentStatus && {
+        employmentStatus: input.employmentStatus,
+      }),
+      ...(input.assignedStoreIds && {
+        assignedStoreIds: input.assignedStoreIds,
+      }),
       updatedAt: new Date().toISOString(),
     };
 
@@ -138,7 +117,7 @@ export class EmployeeResolver {
     return updated;
   }
 
-  @Mutation('deleteEmployee')
+  @Mutation(() => Boolean, { description: '직원 삭제/비활성화' })
   deleteEmployee(@Args('id') id: string): boolean {
     const employee = employees.get(id);
     if (!employee) {
@@ -146,10 +125,9 @@ export class EmployeeResolver {
     }
 
     // 실제 삭제 대신 비활성화
-    employee.employmentStatus = 'INACTIVE';
+    employee.employmentStatus = EmploymentStatus.INACTIVE;
     employee.updatedAt = new Date().toISOString();
     employees.set(id, employee);
     return true;
   }
 }
-

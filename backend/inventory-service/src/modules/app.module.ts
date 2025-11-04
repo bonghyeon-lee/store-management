@@ -12,7 +12,10 @@ import { PurchaseOrderResolver } from '../resolvers/purchase-order.resolver';
   imports: [
     GraphQLModule.forRoot<ApolloFederationDriverConfig>({
       driver: ApolloFederationDriver,
-      typePaths: [require.resolve('@schemas/inventory.graphql')],
+      autoSchemaFile: {
+        path: 'schema.gql',
+        federation: 2,
+      },
       playground: true,
       sortSchema: true,
     }),

@@ -1,17 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
 import jwt from 'jsonwebtoken';
 
-export interface AuthenticatedRequest extends Request {
-  body?: {
-    query?: string;
-    variables?: unknown;
-  };
+type GraphQLRequestBody = {
+  query?: string;
+  variables?: unknown;
+};
+
+export type AuthenticatedRequest = Request<
+  ParamsDictionary,
+  any,
+  GraphQLRequestBody,
+  ParsedQs
+> & {
   user?: {
     userId: string;
     role: string;
     storeIds?: string[];
   };
-}
+};
 
 const JWT_SECRET =
   process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -31,18 +39,17 @@ export function authMiddleware(
     req.body?.query?.includes('__schema') ||
     req.body?.query?.includes('IntrospectionQuery')
   ) {
-    return (next as unknown as () => void)();
+    next();
+    return;
   }
 
   // 헬스 체크는 인증 없이 허용
-  // @ts-expect-error - Express Request 타입 추론 문제
   const path = req.path;
   if (path === '/health' || path === '/healthz') {
-    // @ts-expect-error - Express NextFunction 타입 추론 문제
-    return next();
+    next();
+    return;
   }
 
-  // @ts-expect-error - Express Request 타입 추론 문제
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     // 인증이 필요한 경우에만 에러 반환
@@ -52,10 +59,11 @@ export function authMiddleware(
       req.body?.query?.includes('register');
 
     if (isPublicQuery) {
-      return (next as unknown as () => void)();
+      next();
+      return;
     }
 
-    return (res as unknown as Response).status(401).json({
+    res.status(401).json({
       errors: [
         {
           message:
@@ -66,6 +74,7 @@ export function authMiddleware(
         },
       ],
     });
+    return;
   }
 
   const token = authHeader.substring(7); // "Bearer " 제거
@@ -82,10 +91,10 @@ export function authMiddleware(
       storeIds: decoded.storeIds || [],
     };
 
-    (next as () => void)();
+    next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      return (res as unknown as Response).status(401).json({
+      res.status(401).json({
         errors: [
           {
             message: '토큰이 만료되었습니다.',
@@ -95,10 +104,11 @@ export function authMiddleware(
           },
         ],
       });
+      return;
     }
 
     if (error instanceof jwt.JsonWebTokenError) {
-      return (res as unknown as Response).status(401).json({
+      res.status(401).json({
         errors: [
           {
             message: '유효하지 않은 토큰입니다.',
@@ -108,9 +118,10 @@ export function authMiddleware(
           },
         ],
       });
+      return;
     }
 
-    return (res as unknown as Response).status(401).json({
+    res.status(401).json({
       errors: [
         {
           message: '인증 처리 중 오류가 발생했습니다.',
@@ -120,6 +131,7 @@ export function authMiddleware(
         },
       ],
     });
+    return;
   }
 }
 
@@ -133,7 +145,7 @@ export function requireRole(...allowedRoles: string[]) {
     next: NextFunction,
   ): void => {
     if (!req.user) {
-      return (res as unknown as Response).status(401).json({
+      res.status(401).json({
         errors: [
           {
             message: '인증이 필요합니다.',
@@ -143,10 +155,11 @@ export function requireRole(...allowedRoles: string[]) {
           },
         ],
       });
+      return;
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      return (res as unknown as Response).status(403).json({
+      res.status(403).json({
         errors: [
           {
             message: '이 작업을 수행할 권한이 없습니다.',
@@ -158,8 +171,9 @@ export function requireRole(...allowedRoles: string[]) {
           },
         ],
       });
+      return;
     }
 
-    (next as () => void)();
+    next();
   };
 }

@@ -52,8 +52,8 @@ export function introspectionControlMiddleware(
   const allowIntrospection = process.env.ALLOW_INTROSPECTION === 'true';
 
   if (isProduction && !allowIntrospection) {
-    const query =
-      (req as Request & { body?: { query?: string } }).body?.query || '';
+    const body = req.body as { query?: string } | undefined;
+    const query = body?.query ?? '';
 
     // Introspection 쿼리 차단
     if (
@@ -61,7 +61,7 @@ export function introspectionControlMiddleware(
       query.includes('__type') ||
       query.includes('IntrospectionQuery')
     ) {
-      return (res as unknown as Response).status(403).json({
+      res.status(403).json({
         errors: [
           {
             message: 'Introspection은 프로덕션 환경에서 비활성화되어 있습니다.',
@@ -71,8 +71,9 @@ export function introspectionControlMiddleware(
           },
         ],
       });
+      return;
     }
   }
 
-  (next as unknown as () => void)();
+  next();
 }

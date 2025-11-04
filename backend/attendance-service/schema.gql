@@ -1,0 +1,168 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""출퇴근 기록"""
+type Attendance {
+  checkInAt: String
+  checkOutAt: String
+
+  """ISO-8601 (YYYY-MM-DD)"""
+  date: String!
+  employeeId: ID!
+  notes: String
+  status: AttendanceStatus!
+  storeId: ID!
+
+  """근무 시간 (시간 단위)"""
+  workingHours: Float
+}
+
+enum AttendanceStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+input CheckInInput {
+  """ISO-8601 (YYYY-MM-DDTHH:mm:ss)"""
+  checkInAt: String!
+
+  """ISO-8601 (YYYY-MM-DD)"""
+  date: String!
+  employeeId: ID!
+  notes: String
+  storeId: ID!
+}
+
+input CheckOutInput {
+  """ISO-8601 (YYYY-MM-DDTHH:mm:ss)"""
+  checkOutAt: String!
+
+  """ISO-8601 (YYYY-MM-DD)"""
+  date: String!
+  employeeId: ID!
+  notes: String
+  storeId: ID!
+}
+
+input CreateEmployeeInput {
+  assignedStoreIds: [ID!]!
+  email: String
+  name: String!
+  phone: String
+  role: String!
+}
+
+"""일별 근태 집계"""
+type DailyAttendanceReport {
+  absentCount: Float!
+
+  """출근률 (0-1)"""
+  attendanceRate: Float!
+  date: String!
+  employeeStats: [EmployeeAttendanceStats!]!
+  lateCount: Float!
+  storeId: ID
+}
+
+"""직원"""
+type Employee {
+  assignedStoreIds: [ID!]!
+  createdAt: String!
+  email: String
+  employmentStatus: EmploymentStatus!
+  id: ID!
+  name: String!
+  phone: String
+  role: String!
+  updatedAt: String!
+}
+
+type EmployeeAttendanceStats {
+  checkInAt: String
+  checkOutAt: String
+  employeeId: ID!
+  employeeName: String!
+  status: AttendanceStatus!
+  workingHours: Float!
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
+type Mutation {
+  """근태 승인"""
+  approveAttendance(date: String!, employeeId: String!, notes: String, storeId: String!): Attendance!
+
+  """출근 기록"""
+  checkIn(input: CheckInInput!): Attendance!
+
+  """퇴근 기록"""
+  checkOut(input: CheckOutInput!): Attendance!
+
+  """직원 생성"""
+  createEmployee(input: CreateEmployeeInput!): Employee!
+
+  """직원 삭제/비활성화"""
+  deleteEmployee(id: String!): Boolean!
+
+  """근태 거부"""
+  rejectAttendance(date: String!, employeeId: String!, notes: String!, storeId: String!): Attendance!
+
+  """근태 수정 요청"""
+  requestAttendanceCorrection(date: String!, employeeId: String!, notes: String!, storeId: String!): Attendance!
+
+  """직원 정보 수정"""
+  updateEmployee(id: String!, input: UpdateEmployeeInput!): Employee!
+}
+
+type Query {
+  """출퇴근 기록 조회"""
+  attendance(date: String!, employeeId: String!, storeId: String!): Attendance
+
+  """출퇴근 기록 목록 조회"""
+  attendanceRecords(employeeId: String, endDate: String!, startDate: String!, status: AttendanceStatus, storeId: String): [Attendance!]!
+
+  """일별 근태 리포트"""
+  dailyAttendanceReport(date: String!, storeId: String): DailyAttendanceReport!
+
+  """직원 조회"""
+  employee(id: String!): Employee
+
+  """직원 목록 조회"""
+  employees(role: String, status: EmploymentStatus, storeId: String): [Employee!]!
+
+  """승인 대기 목록 조회"""
+  pendingApprovals(managerId: String, storeId: String): [Attendance!]!
+
+  """주별 근태 리포트"""
+  weeklyAttendanceReport(storeId: String, weekStart: String!): WeeklyAttendanceReport!
+}
+
+input UpdateEmployeeInput {
+  assignedStoreIds: [ID!]
+  email: String
+  employmentStatus: EmploymentStatus
+  name: String
+  phone: String
+  role: String
+}
+
+"""주별 근태 집계"""
+type WeeklyAttendanceReport {
+  attendanceRate: Float!
+  averageWorkingHours: Float!
+  dailyReports: [DailyAttendanceReport!]!
+  storeId: ID
+  totalWorkingHours: Float!
+
+  """주 종료일 (YYYY-MM-DD)"""
+  weekEnd: String!
+
+  """주 시작일 (YYYY-MM-DD)"""
+  weekStart: String!
+}

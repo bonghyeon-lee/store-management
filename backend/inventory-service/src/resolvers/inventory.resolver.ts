@@ -1,36 +1,13 @@
 import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
-
-interface InventoryItem {
-  storeId: string;
-  sku: string;
-  quantityOnHand: number;
-  reserved: number;
-  reorderPoint: number;
-  lastAuditAt?: string | null;
-  updatedAt: string;
-}
-
-interface InventoryAudit {
-  id: string;
-  storeId: string;
-  sku: string;
-  previousQuantity: number;
-  newQuantity: number;
-  auditDate: string;
-  performedBy: string;
-  notes?: string | null;
-}
-
-interface ReorderRecommendation {
-  storeId: string;
-  sku: string;
-  productName: string;
-  currentQuantity: number;
-  reorderPoint: number;
-  recommendedQuantity: number;
-  priority: number;
-  urgency: string;
-}
+import {
+  InventoryItem,
+  InventoryAudit,
+  ReorderRecommendation,
+} from '../models/inventory.model';
+import {
+  SubmitInventoryCountInput,
+  SetReorderPointInput,
+} from '../models/inputs.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
 const inventoryItems: Map<string, InventoryItem> = new Map();
@@ -64,9 +41,9 @@ const initializeSampleData = () => {
 
 initializeSampleData();
 
-@Resolver('InventoryItem')
+@Resolver(() => InventoryItem)
 export class InventoryResolver {
-  @Query('inventoryItem')
+  @Query(() => InventoryItem, { nullable: true, description: '재고 항목 조회' })
   inventoryItem(
     @Args('storeId') storeId: string,
     @Args('sku') sku: string
@@ -75,10 +52,10 @@ export class InventoryResolver {
     return inventoryItems.get(key) || null;
   }
 
-  @Query('storeInventories')
+  @Query(() => [InventoryItem], { description: '지점별 재고 목록 조회' })
   storeInventories(
     @Args('storeId') storeId: string,
-    @Args('sku') sku: string | undefined
+    @Args('sku', { nullable: true }) sku?: string
   ): InventoryItem[] {
     const items = Array.from(inventoryItems.values());
     let filtered = items.filter((item) => item.storeId === storeId);
@@ -90,18 +67,18 @@ export class InventoryResolver {
     return filtered;
   }
 
-  @Query('skuInventories')
+  @Query(() => [InventoryItem], { description: 'SKU별 재고 조회 (모든 지점)' })
   skuInventories(@Args('sku') sku: string): InventoryItem[] {
     const items = Array.from(inventoryItems.values());
     return items.filter((item) => item.sku === sku);
   }
 
-  @Query('inventoryAuditHistory')
+  @Query(() => [InventoryAudit], { description: '재고 실사 이력 조회' })
   inventoryAuditHistory(
-    @Args('storeId') storeId: string | undefined,
-    @Args('sku') sku: string | undefined,
     @Args('startDate') startDate: string,
-    @Args('endDate') endDate: string
+    @Args('endDate') endDate: string,
+    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('sku', { nullable: true }) sku?: string
   ): InventoryAudit[] {
     let filtered = inventoryAudits.filter((audit) => {
       return audit.auditDate >= startDate && audit.auditDate <= endDate;
@@ -118,10 +95,12 @@ export class InventoryResolver {
     return filtered;
   }
 
-  @Query('reorderRecommendations')
+  @Query(() => [ReorderRecommendation], {
+    description: '리오더 추천 목록 조회',
+  })
   reorderRecommendations(
-    @Args('storeId') storeId: string | undefined,
-    @Args('sku') sku: string | undefined
+    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('sku', { nullable: true }) sku?: string
   ): ReorderRecommendation[] {
     const items = Array.from(inventoryItems.values());
     let filtered = items.filter(
@@ -176,15 +155,9 @@ export class InventoryResolver {
     return recommendations.sort((a, b) => a.priority - b.priority);
   }
 
-  @Mutation('submitInventoryCount')
+  @Mutation(() => InventoryItem, { description: '재고 실사 입력' })
   submitInventoryCount(
-    @Args('input')
-    input: {
-      storeId: string;
-      sku: string;
-      quantity: number;
-      notes?: string;
-    }
+    @Args('input') input: SubmitInventoryCountInput
   ): InventoryItem {
     const key = getInventoryKey(input.storeId, input.sku);
     const existing = inventoryItems.get(key);
@@ -201,7 +174,7 @@ export class InventoryResolver {
       newQuantity: input.quantity,
       auditDate: now,
       performedBy: 'USER-001', // 실제로는 컨텍스트에서 가져옴
-      notes: input.notes || null,
+      notes: input.notes,
     };
 
     inventoryAudits.push(audit);
@@ -221,15 +194,8 @@ export class InventoryResolver {
     return inventoryItem;
   }
 
-  @Mutation('setReorderPoint')
-  setReorderPoint(
-    @Args('input')
-    input: {
-      storeId: string;
-      sku: string;
-      reorderPoint: number;
-    }
-  ): InventoryItem {
+  @Mutation(() => InventoryItem, { description: '안전재고 임계치 설정' })
+  setReorderPoint(@Args('input') input: SetReorderPointInput): InventoryItem {
     const key = getInventoryKey(input.storeId, input.sku);
     const existing = inventoryItems.get(key);
 
@@ -247,12 +213,12 @@ export class InventoryResolver {
     return updated;
   }
 
-  @Mutation('adjustInventory')
+  @Mutation(() => InventoryItem, { description: '재고 조정 (기존)' })
   adjustInventory(
     @Args('storeId') storeId: string,
     @Args('sku') sku: string,
     @Args('delta') delta: number,
-    @Args('reason') reason: string | undefined
+    @Args('reason', { nullable: true }) reason?: string
   ): InventoryItem {
     const key = getInventoryKey(storeId, sku);
     const existing = inventoryItems.get(key);
@@ -276,12 +242,12 @@ export class InventoryResolver {
     return updated;
   }
 
-  @Mutation('reconcileInventory')
+  @Mutation(() => InventoryItem, { description: '재고 실사 (기존)' })
   reconcileInventory(
     @Args('storeId') storeId: string,
     @Args('sku') sku: string,
     @Args('quantity') quantity: number,
-    @Args('reason') reason: string | undefined
+    @Args('reason', { nullable: true }) reason?: string
   ): InventoryItem {
     // reconcileInventory는 submitInventoryCount와 동일한 로직
     const key = getInventoryKey(storeId, sku);
@@ -299,7 +265,7 @@ export class InventoryResolver {
       newQuantity: quantity,
       auditDate: now,
       performedBy: 'USER-001', // 실제로는 컨텍스트에서 가져옴
-      notes: reason || null,
+      notes: reason,
     };
 
     inventoryAudits.push(audit);

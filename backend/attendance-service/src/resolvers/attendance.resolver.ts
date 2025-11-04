@@ -1,17 +1,6 @@
 import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
-
-type AttendanceStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
-interface Attendance {
-  storeId: string;
-  employeeId: string;
-  date: string;
-  checkInAt?: string | null;
-  checkOutAt?: string | null;
-  status: AttendanceStatus;
-  notes?: string | null;
-  workingHours?: number | null;
-}
+import { Attendance, AttendanceStatus } from '../models/attendance.model';
+import { CheckInInput, CheckOutInput } from '../models/inputs.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
 export const attendanceRecords: Map<string, Attendance> = new Map();
@@ -23,7 +12,7 @@ const getAttendanceKey = (storeId: string, employeeId: string, date: string) =>
 // 근무 시간 계산 함수
 const calculateWorkingHours = (
   checkInAt: string | null | undefined,
-  checkOutAt: string | null | undefined,
+  checkOutAt: string | null | undefined
 ): number | null => {
   if (!checkInAt || !checkOutAt) {
     return null;
@@ -37,25 +26,26 @@ const calculateWorkingHours = (
   return Math.round(diffHours * 100) / 100; // 소수점 둘째 자리까지
 };
 
-@Resolver('Attendance')
+@Resolver(() => Attendance)
 export class AttendanceResolver {
-  @Query('attendance')
+  @Query(() => Attendance, { nullable: true, description: '출퇴근 기록 조회' })
   attendance(
     @Args('storeId') storeId: string,
     @Args('employeeId') employeeId: string,
-    @Args('date') date: string,
+    @Args('date') date: string
   ): Attendance | null {
     const key = getAttendanceKey(storeId, employeeId, date);
     return attendanceRecords.get(key) || null;
   }
 
-  @Query('attendanceRecords')
+  @Query(() => [Attendance], { description: '출퇴근 기록 목록 조회' })
   attendanceRecords(
-    @Args('storeId') storeId: string | undefined,
-    @Args('employeeId') employeeId: string | undefined,
     @Args('startDate') startDate: string,
     @Args('endDate') endDate: string,
-    @Args('status') status: AttendanceStatus | undefined,
+    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('employeeId', { nullable: true }) employeeId?: string,
+    @Args('status', { type: () => AttendanceStatus, nullable: true })
+    status?: AttendanceStatus
   ): Attendance[] {
     const records = Array.from(attendanceRecords.values());
 
@@ -79,14 +69,16 @@ export class AttendanceResolver {
     return filtered;
   }
 
-  @Query('pendingApprovals')
+  @Query(() => [Attendance], { description: '승인 대기 목록 조회' })
   pendingApprovals(
-    @Args('storeId') storeId: string | undefined,
-    @Args('managerId') managerId: string | undefined,
+    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('managerId', { nullable: true }) managerId?: string
   ): Attendance[] {
     const records = Array.from(attendanceRecords.values());
 
-    let filtered = records.filter((record) => record.status === 'PENDING');
+    let filtered = records.filter(
+      (record) => record.status === AttendanceStatus.PENDING
+    );
 
     if (storeId) {
       filtered = filtered.filter((record) => record.storeId === storeId);
@@ -96,28 +88,18 @@ export class AttendanceResolver {
     return filtered;
   }
 
-  @Mutation('checkIn')
-  checkIn(
-    @Args('input')
-    input: {
-      storeId: string;
-      employeeId: string;
-      date: string;
-      checkInAt: string;
-      notes?: string;
-    },
-  ): Attendance {
+  @Mutation(() => Attendance, { description: '출근 기록' })
+  checkIn(@Args('input') input: CheckInInput): Attendance {
     const key = getAttendanceKey(input.storeId, input.employeeId, input.date);
 
     const existing = attendanceRecords.get(key);
     if (existing) {
       // 이미 출근 기록이 있으면 업데이트
       existing.checkInAt = input.checkInAt;
-      existing.notes = input.notes || null;
-      existing.workingHours = calculateWorkingHours(
-        existing.checkInAt,
-        existing.checkOutAt,
-      );
+      existing.notes = input.notes;
+      existing.workingHours =
+        calculateWorkingHours(existing.checkInAt, existing.checkOutAt) ||
+        undefined;
       attendanceRecords.set(key, existing);
       return existing;
     }
@@ -128,27 +110,18 @@ export class AttendanceResolver {
       employeeId: input.employeeId,
       date: input.date,
       checkInAt: input.checkInAt,
-      checkOutAt: null,
-      status: 'PENDING',
-      notes: input.notes || null,
-      workingHours: null,
+      checkOutAt: undefined,
+      status: AttendanceStatus.PENDING,
+      notes: input.notes,
+      workingHours: undefined,
     };
 
     attendanceRecords.set(key, attendance);
     return attendance;
   }
 
-  @Mutation('checkOut')
-  checkOut(
-    @Args('input')
-    input: {
-      storeId: string;
-      employeeId: string;
-      date: string;
-      checkOutAt: string;
-      notes?: string;
-    },
-  ): Attendance {
+  @Mutation(() => Attendance, { description: '퇴근 기록' })
+  checkOut(@Args('input') input: CheckOutInput): Attendance {
     const key = getAttendanceKey(input.storeId, input.employeeId, input.date);
 
     const existing = attendanceRecords.get(key);
@@ -157,22 +130,21 @@ export class AttendanceResolver {
     }
 
     existing.checkOutAt = input.checkOutAt;
-    existing.notes = input.notes || existing.notes || null;
-    existing.workingHours = calculateWorkingHours(
-      existing.checkInAt,
-      existing.checkOutAt,
-    );
+    existing.notes = input.notes || existing.notes;
+    existing.workingHours =
+      calculateWorkingHours(existing.checkInAt, existing.checkOutAt) ||
+      undefined;
 
     attendanceRecords.set(key, existing);
     return existing;
   }
 
-  @Mutation('approveAttendance')
+  @Mutation(() => Attendance, { description: '근태 승인' })
   approveAttendance(
     @Args('storeId') storeId: string,
     @Args('employeeId') employeeId: string,
     @Args('date') date: string,
-    @Args('notes') notes: string | undefined,
+    @Args('notes', { nullable: true }) notes?: string
   ): Attendance {
     const key = getAttendanceKey(storeId, employeeId, date);
     const attendance = attendanceRecords.get(key);
@@ -181,7 +153,7 @@ export class AttendanceResolver {
       throw new Error('출퇴근 기록을 찾을 수 없습니다.');
     }
 
-    attendance.status = 'APPROVED';
+    attendance.status = AttendanceStatus.APPROVED;
     if (notes) {
       attendance.notes = notes;
     }
@@ -190,12 +162,12 @@ export class AttendanceResolver {
     return attendance;
   }
 
-  @Mutation('rejectAttendance')
+  @Mutation(() => Attendance, { description: '근태 거부' })
   rejectAttendance(
     @Args('storeId') storeId: string,
     @Args('employeeId') employeeId: string,
     @Args('date') date: string,
-    @Args('notes') notes: string,
+    @Args('notes') notes: string
   ): Attendance {
     const key = getAttendanceKey(storeId, employeeId, date);
     const attendance = attendanceRecords.get(key);
@@ -204,19 +176,19 @@ export class AttendanceResolver {
       throw new Error('출퇴근 기록을 찾을 수 없습니다.');
     }
 
-    attendance.status = 'REJECTED';
+    attendance.status = AttendanceStatus.REJECTED;
     attendance.notes = notes;
 
     attendanceRecords.set(key, attendance);
     return attendance;
   }
 
-  @Mutation('requestAttendanceCorrection')
+  @Mutation(() => Attendance, { description: '근태 수정 요청' })
   requestAttendanceCorrection(
     @Args('storeId') storeId: string,
     @Args('employeeId') employeeId: string,
     @Args('date') date: string,
-    @Args('notes') notes: string,
+    @Args('notes') notes: string
   ): Attendance {
     const key = getAttendanceKey(storeId, employeeId, date);
     const attendance = attendanceRecords.get(key);
@@ -225,7 +197,7 @@ export class AttendanceResolver {
       throw new Error('출퇴근 기록을 찾을 수 없습니다.');
     }
 
-    attendance.status = 'PENDING';
+    attendance.status = AttendanceStatus.PENDING;
     attendance.notes = notes;
 
     attendanceRecords.set(key, attendance);

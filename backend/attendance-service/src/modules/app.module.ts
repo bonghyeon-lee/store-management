@@ -12,7 +12,10 @@ import { ReportResolver } from '../resolvers/report.resolver';
   imports: [
     GraphQLModule.forRoot<ApolloFederationDriverConfig>({
       driver: ApolloFederationDriver,
-      typePaths: [require.resolve('@schemas/attendance.graphql')],
+      autoSchemaFile: {
+        path: 'schema.gql',
+        federation: 2,
+      },
       playground: true,
       sortSchema: true,
     }),

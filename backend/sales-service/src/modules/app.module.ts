@@ -10,7 +10,10 @@ import { SalesResolver } from '../resolvers/sales.resolver';
   imports: [
     GraphQLModule.forRoot<ApolloFederationDriverConfig>({
       driver: ApolloFederationDriver,
-      typePaths: [require.resolve('@schemas/sales.graphql')],
+      autoSchemaFile: {
+        path: 'schema.gql',
+        federation: 2,
+      },
       playground: true,
       sortSchema: true,
     }),
