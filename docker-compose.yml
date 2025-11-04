@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  attendance-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./backend/attendance-service:/app
+      - ./schemas:/schemas:ro
+    restart: unless-stopped
+    command: sh -c "npm ci && npm run start:dev"
+    environment:
+      - PORT=4001
+    ports:
+      - "4001:4001"
+
+  inventory-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./backend/inventory-service:/app
+      - ./schemas:/schemas:ro
+    restart: unless-stopped
+    command: sh -c "npm ci && npm run start:dev"
+    environment:
+      - PORT=4002
+    ports:
+      - "4002:4002"
+
+  sales-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./backend/sales-service:/app
+      - ./schemas:/schemas:ro
+    restart: unless-stopped
+    command: sh -c "npm ci && npm run start:dev"
+    environment:
+      - PORT=4003
+    ports:
+      - "4003:4003"
+
+  gateway-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./backend/gateway-service:/app
+    command: sh -c "npm ci && npm run start:dev"
+    environment:
+      - PORT=4000
+      - ATTENDANCE_URL=http://attendance-service:4001/graphql
+      - INVENTORY_URL=http://inventory-service:4002/graphql
+      - SALES_URL=http://sales-service:4003/graphql
+    ports:
+      - "4000:4000"
+    depends_on:
+      - attendance-service
+      - inventory-service
+      - sales-service
+    restart: unless-stopped
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - gateway-service
+
+networks:
+  default:
+    name: store-management-net

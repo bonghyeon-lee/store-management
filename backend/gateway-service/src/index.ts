@@ -7,12 +7,41 @@ import { ApolloGateway, IntrospectAndCompose } from '@apollo/gateway';
 async function bootstrap() {
   const port = Number(process.env.PORT ?? 4000);
 
+  const attendanceUrl =
+    process.env.ATTENDANCE_URL ?? 'http://localhost:4001/graphql';
+  const inventoryUrl =
+    process.env.INVENTORY_URL ?? 'http://localhost:4002/graphql';
+  const salesUrl = process.env.SALES_URL ?? 'http://localhost:4003/graphql';
+
+  async function waitForUrl(url: string, attempts = 30, delayMs = 2000) {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ query: 'query{__typename}' }),
+        });
+        if (res.ok) return;
+      } catch {
+        // ignore and retry
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+    throw new Error(`Subgraph not reachable: ${url}`);
+  }
+
+  await Promise.all([
+    waitForUrl(attendanceUrl),
+    waitForUrl(inventoryUrl),
+    waitForUrl(salesUrl),
+  ]);
+
   const gateway = new ApolloGateway({
     supergraphSdl: new IntrospectAndCompose({
       subgraphs: [
-        { name: 'attendance', url: 'http://localhost:4001/graphql' },
-        { name: 'inventory', url: 'http://localhost:4002/graphql' },
-        { name: 'sales', url: 'http://localhost:4003/graphql' },
+        { name: 'attendance', url: attendanceUrl },
+        { name: 'inventory', url: inventoryUrl },
+        { name: 'sales', url: salesUrl },
       ],
     }),
   });
@@ -32,7 +61,7 @@ async function bootstrap() {
     express.json(),
     expressMiddleware(server, {
       context: async () => ({}),
-    }),
+    }) as express.RequestHandler
   );
 
   app.listen(port, () => {
@@ -46,5 +75,3 @@ bootstrap().catch((err) => {
   console.error('Failed to start gateway:', err);
   process.exit(1);
 });
-
-
