@@ -6,6 +6,7 @@ import {
 } from '@nestjs/apollo';
 import { InventoryResolver } from '../resolvers/inventory.resolver';
 import { ProductResolver } from '../resolvers/product.resolver';
+import { PurchaseOrderResolver } from '../resolvers/purchase-order.resolver';
 
 @Module({
   imports: [
@@ -16,6 +17,6 @@ import { ProductResolver } from '../resolvers/product.resolver';
       sortSchema: true,
     }),
   ],
-  providers: [InventoryResolver, ProductResolver],
+  providers: [InventoryResolver, ProductResolver, PurchaseOrderResolver],
 })
 export class AppModule {}

@@ -7,6 +7,25 @@ schema
   mutation: Mutation
 }
 
+"직원"
+type Employee @key(fields: "id") {
+  id: ID!
+  name: String!
+  email: String
+  phone: String
+  role: String!
+  employmentStatus: EmploymentStatus!
+  assignedStoreIds: [ID!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
 "출퇴근 기록"
 type Attendance @key(fields: "storeId employeeId date") {
   storeId: ID!
@@ -17,6 +36,8 @@ type Attendance @key(fields: "storeId employeeId date") {
   checkOutAt: String
   status: AttendanceStatus!
   notes: String
+  workingHours: Float
+  "근무 시간 (시간 단위)"
 }
 
 enum AttendanceStatus {
@@ -25,17 +46,138 @@ enum AttendanceStatus {
   REJECTED
 }
 
+"근태 리포트"
+type AttendanceReport {
+  date: String!
+  storeId: ID
+  totalEmployees: Int!
+  attendanceRate: Float!
+  "출근률 (0-1)"
+  lateCount: Int!
+  absentCount: Int!
+  totalWorkingHours: Float!
+  averageWorkingHours: Float!
+}
+
+"일별 근태 집계"
+type DailyAttendanceReport {
+  date: String!
+  storeId: ID
+  attendanceRate: Float!
+  lateCount: Int!
+  absentCount: Int!
+  employeeStats: [EmployeeAttendanceStats!]!
+}
+
+"직원별 근태 통계"
+type EmployeeAttendanceStats {
+  employeeId: ID!
+  employeeName: String!
+  checkInAt: String
+  checkOutAt: String
+  workingHours: Float!
+  status: AttendanceStatus!
+}
+
+"주별 근태 집계"
+type WeeklyAttendanceReport {
+  weekStart: String!
+  "주 시작일 (YYYY-MM-DD)"
+  weekEnd: String!
+  "주 종료일 (YYYY-MM-DD)"
+  storeId: ID
+  attendanceRate: Float!
+  averageWorkingHours: Float!
+  totalWorkingHours: Float!
+  dailyReports: [DailyAttendanceReport!]!
+}
+
+input CreateEmployeeInput {
+  name: String!
+  email: String
+  phone: String
+  role: String!
+  assignedStoreIds: [ID!]!
+}
+
+input UpdateEmployeeInput {
+  name: String
+  email: String
+  phone: String
+  role: String
+  employmentStatus: EmploymentStatus
+  assignedStoreIds: [ID!]
+}
+
+input CheckInInput {
+  storeId: ID!
+  employeeId: ID!
+  date: String!
+  "ISO-8601 (YYYY-MM-DD)"
+  checkInAt: String!
+  "ISO-8601 (YYYY-MM-DDTHH:mm:ss)"
+  notes: String
+}
+
+input CheckOutInput {
+  storeId: ID!
+  employeeId: ID!
+  date: String!
+  "ISO-8601 (YYYY-MM-DD)"
+  checkOutAt: String!
+  "ISO-8601 (YYYY-MM-DDTHH:mm:ss)"
+  notes: String
+}
+
 type Query {
+  "직원 조회"
+  employee(id: ID!): Employee
+  "직원 목록 조회"
+  employees(storeId: ID, role: String, status: EmploymentStatus): [Employee!]!
+  "출퇴근 기록 조회"
   attendance(storeId: ID!, employeeId: ID!, date: String!): Attendance
+  "출퇴근 기록 목록 조회"
+  attendanceRecords(
+    storeId: ID
+    employeeId: ID
+    startDate: String!
+    endDate: String!
+    status: AttendanceStatus
+  ): [Attendance!]!
+  "승인 대기 목록 조회"
+  pendingApprovals(storeId: ID, managerId: ID): [Attendance!]!
+  "일별 근태 리포트"
+  dailyAttendanceReport(storeId: ID, date: String!): DailyAttendanceReport!
+  "주별 근태 리포트"
+  weeklyAttendanceReport(storeId: ID, weekStart: String!): WeeklyAttendanceReport!
 }
 
 type Mutation {
+  "직원 생성"
+  createEmployee(input: CreateEmployeeInput!): Employee!
+  "직원 정보 수정"
+  updateEmployee(id: ID!, input: UpdateEmployeeInput!): Employee!
+  "직원 삭제/비활성화"
+  deleteEmployee(id: ID!): Boolean!
+  "출근 기록"
+  checkIn(input: CheckInInput!): Attendance!
+  "퇴근 기록"
+  checkOut(input: CheckOutInput!): Attendance!
+  "근태 승인"
   approveAttendance(
     storeId: ID!
     employeeId: ID!
     date: String!
     notes: String
   ): Attendance!
+  "근태 거부"
+  rejectAttendance(
+    storeId: ID!
+    employeeId: ID!
+    date: String!
+    notes: String!
+  ): Attendance!
+  "근태 수정 요청"
   requestAttendanceCorrection(
     storeId: ID!
     employeeId: ID!

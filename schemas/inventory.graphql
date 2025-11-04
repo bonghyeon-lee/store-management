@@ -9,31 +9,207 @@ schema
   mutation: Mutation
 }
 
+"상품/SKU"
+type Product @key(fields: "id") {
+  id: ID!
+  name: String!
+  description: String
+  unitPrice: Float!
+  "단가"
+  category: String
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
 "재고 항목"
 type InventoryItem @key(fields: "storeId sku") {
   storeId: ID!
   sku: ID!
-  name: String!
-  quantity: Int!
+  quantityOnHand: Int!
+  "현재 재고 수량"
   reserved: Int!
+  "예약된 수량"
+  reorderPoint: Int!
+  "안전재고 임계치"
+  lastAuditAt: String
+  "마지막 실사 일시"
   updatedAt: String!
 }
 
+"재고 실사 이력"
+type InventoryAudit {
+  id: ID!
+  storeId: ID!
+  sku: ID!
+  previousQuantity: Int!
+  newQuantity: Int!
+  auditDate: String!
+  "ISO-8601"
+  performedBy: ID!
+  "실사 수행자 ID"
+  notes: String
+}
+
+"발주"
+type PurchaseOrder {
+  id: ID!
+  storeId: ID!
+  sku: ID!
+  requestedQuantity: Int!
+  "요청 수량"
+  approvedQuantity: Int
+  "승인된 수량"
+  receivedQuantity: Int
+  "입고된 수량"
+  status: PurchaseOrderStatus!
+  requestedBy: ID!
+  "발주 요청자 ID"
+  approvedBy: ID
+  "승인자 ID"
+  requestedAt: String!
+  "ISO-8601"
+  approvedAt: String
+  "ISO-8601"
+  receivedAt: String
+  "ISO-8601"
+  notes: String
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RECEIVED
+}
+
+"리오더 추천"
+type ReorderRecommendation {
+  storeId: ID!
+  sku: ID!
+  productName: String!
+  currentQuantity: Int!
+  reorderPoint: Int!
+  recommendedQuantity: Int!
+  "추천 발주 수량"
+  priority: Int!
+  "우선순위 (낮을수록 높음)"
+  urgency: String!
+  "긴급도 (HIGH, MEDIUM, LOW)"
+}
+
+input CreateSKUInput {
+  name: String!
+  description: String
+  unitPrice: Float!
+  category: String
+}
+
+input UpdateSKUInput {
+  name: String
+  description: String
+  unitPrice: Float
+  category: String
+  isActive: Boolean
+}
+
+input SubmitInventoryCountInput {
+  storeId: ID!
+  sku: ID!
+  quantity: Int!
+  "실사 수량"
+  notes: String
+}
+
+input SetReorderPointInput {
+  storeId: ID!
+  sku: ID!
+  reorderPoint: Int!
+}
+
+input CreatePurchaseOrderInput {
+  storeId: ID!
+  sku: ID!
+  requestedQuantity: Int!
+  notes: String
+}
+
 type Query {
+  "SKU 조회"
+  sku(id: ID!): Product
+  "SKU 목록 조회"
+  skus(category: String, isActive: Boolean): [Product!]!
+  "재고 항목 조회"
   inventoryItem(storeId: ID!, sku: ID!): InventoryItem
+  "지점별 재고 목록 조회"
+  storeInventories(storeId: ID!, sku: ID): [InventoryItem!]!
+  "SKU별 재고 조회 (모든 지점)"
+  skuInventories(sku: ID!): [InventoryItem!]!
+  "재고 실사 이력 조회"
+  inventoryAuditHistory(
+    storeId: ID
+    sku: ID
+    startDate: String!
+    endDate: String!
+  ): [InventoryAudit!]!
+  "리오더 추천 목록 조회"
+  reorderRecommendations(
+    storeId: ID
+    sku: ID
+  ): [ReorderRecommendation!]!
+  "발주 조회"
+  purchaseOrder(id: ID!): PurchaseOrder
+  "발주 목록 조회"
+  purchaseOrders(
+    storeId: ID
+    sku: ID
+    status: PurchaseOrderStatus
+  ): [PurchaseOrder!]!
+  "상품 목록 (기존 호환)"
   products: [Product!]!
 }
 
 type Mutation {
-  adjustInventory(storeId: ID!, sku: ID!, delta: Int!, reason: String): InventoryItem!
-  reconcileInventory(storeId: ID!, sku: ID!, quantity: Int!, reason: String): InventoryItem!
-}
-
-"상품"
-type Product @key(fields: "id") {
-  id: ID!
-  name: String!
-  price: Int!
+  "SKU 생성"
+  createSKU(input: CreateSKUInput!): Product!
+  "SKU 정보 수정"
+  updateSKU(id: ID!, input: UpdateSKUInput!): Product!
+  "SKU 삭제/비활성화"
+  deleteSKU(id: ID!): Boolean!
+  "재고 실사 입력"
+  submitInventoryCount(input: SubmitInventoryCountInput!): InventoryItem!
+  "안전재고 임계치 설정"
+  setReorderPoint(input: SetReorderPointInput!): InventoryItem!
+  "재고 조정 (기존)"
+  adjustInventory(
+    storeId: ID!
+    sku: ID!
+    delta: Int!
+    reason: String
+  ): InventoryItem!
+  "재고 실사 (기존)"
+  reconcileInventory(
+    storeId: ID!
+    sku: ID!
+    quantity: Int!
+    reason: String
+  ): InventoryItem!
+  "발주 요청 생성"
+  createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
+  "발주 승인"
+  approvePurchaseOrder(
+    id: ID!
+    approvedQuantity: Int!
+    notes: String
+  ): PurchaseOrder!
+  "발주 거부"
+  rejectPurchaseOrder(id: ID!, notes: String!): PurchaseOrder!
+  "입고 처리"
+  receiveInventory(
+    purchaseOrderId: ID!
+    receivedQuantity: Int!
+    notes: String
+  ): PurchaseOrder!
 }
 
 

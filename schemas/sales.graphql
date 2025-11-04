@@ -14,9 +14,13 @@ type Order @key(fields: "storeId orderId") {
   storeId: ID!
   orderId: ID!
   createdAt: String!
+  settledAt: String
+  "결제 완료 일시 (ISO-8601)"
   totalAmount: Float!
   currency: String!
   status: OrderStatus!
+  channel: String!
+  "판매 채널 (POS, ONLINE, MOBILE 등)"
   lineItems: [LineItem!]!
 }
 
@@ -35,18 +39,90 @@ enum OrderStatus {
   CANCELLED
 }
 
-type Query {
-  order(storeId: ID!, orderId: ID!): Order
+"일별 매출 집계"
+type DailySales {
+  date: String!
+  "날짜 (YYYY-MM-DD)"
+  storeId: ID
+  totalSales: Float!
+  "총 매출"
+  transactionCount: Int!
+  "거래 건수"
+  averageTransactionValue: Float!
+  "평균 거래액"
+  channelBreakdown: [ChannelSales!]!
+  "채널별 매출 분류"
 }
 
-type Mutation {
-  recordSale(
-    storeId: ID!,
-    orderId: ID!,
-    currency: String!,
-    lineItems: [RecordLineItemInput!]!
-  ): Order!
-  refundOrder(storeId: ID!, orderId: ID!, amount: Float!): Order!
+"채널별 매출"
+type ChannelSales {
+  channel: String!
+  totalSales: Float!
+  transactionCount: Int!
+}
+
+"주별 매출 집계"
+type WeeklySales {
+  weekStart: String!
+  "주 시작일 (YYYY-MM-DD)"
+  weekEnd: String!
+  "주 종료일 (YYYY-MM-DD)"
+  storeId: ID
+  totalSales: Float!
+  transactionCount: Int!
+  averageTransactionValue: Float!
+  previousWeekSales: Float
+  "전주 매출"
+  growthRate: Float
+  "증감률 (전주 대비, %)"
+  dailySales: [DailySales!]!
+  "일별 상세 데이터"
+}
+
+"월별 매출 집계"
+type MonthlySales {
+  year: Int!
+  month: Int!
+  storeId: ID
+  totalSales: Float!
+  transactionCount: Int!
+  averageTransactionValue: Float!
+  previousMonthSales: Float
+  "전월 매출"
+  growthRate: Float
+  "증감률 (전월 대비, %)"
+  dailySales: [DailySales!]!
+  "일별 상세 데이터"
+}
+
+"매출 대시보드"
+type SalesDashboard {
+  period: String!
+  "기간 (YYYY-MM-DD ~ YYYY-MM-DD)"
+  totalSales: Float!
+  "총 매출"
+  totalTransactions: Int!
+  "총 거래 건수"
+  averageTransactionValue: Float!
+  "평균 거래액"
+  storeSummary: [StoreSalesSummary!]!
+  "지점별 요약"
+  topStores: [StoreSalesSummary!]!
+  "상위 성과 지점"
+  bottomStores: [StoreSalesSummary!]!
+  "하위 성과 지점"
+  channelDistribution: [ChannelSales!]!
+  "채널별 매출 분포"
+  trend: [DailySales!]!
+  "기간별 트렌드"
+}
+
+"지점별 매출 요약"
+type StoreSalesSummary {
+  storeId: ID!
+  totalSales: Float!
+  transactionCount: Int!
+  averageTransactionValue: Float!
 }
 
 input RecordLineItemInput {
@@ -54,6 +130,71 @@ input RecordLineItemInput {
   name: String!
   unitPrice: Float!
   quantity: Int!
+}
+
+input RecordSaleInput {
+  storeId: ID!
+  orderId: ID!
+  currency: String!
+  channel: String!
+  lineItems: [RecordLineItemInput!]!
+  settledAt: String
+  "ISO-8601"
+}
+
+type Query {
+  "주문 조회"
+  order(storeId: ID!, orderId: ID!): Order
+  "주문 목록 조회"
+  orders(
+    storeId: ID
+    startDate: String!
+    endDate: String!
+    channel: String
+    status: OrderStatus
+  ): [Order!]!
+  "일별 매출 집계"
+  dailySales(
+    storeId: ID
+    date: String!
+    "YYYY-MM-DD"
+  ): DailySales!
+  "주별 매출 집계"
+  weeklySales(
+    storeId: ID
+    weekStart: String!
+    "YYYY-MM-DD (주 시작일)"
+  ): WeeklySales!
+  "월별 매출 집계"
+  monthlySales(
+    storeId: ID
+    year: Int!
+    month: Int!
+  ): MonthlySales!
+  "매출 대시보드"
+  salesDashboard(
+    storeId: ID
+    startDate: String!
+    endDate: String!
+  ): SalesDashboard!
+}
+
+type Mutation {
+  "매출 기록 (단일)"
+  recordSale(
+    storeId: ID!
+    orderId: ID!
+    currency: String!
+    channel: String!
+    lineItems: [RecordLineItemInput!]!
+    settledAt: String
+  ): Order!
+  "매출 기록 (배치)"
+  recordSalesBatch(
+    sales: [RecordSaleInput!]!
+  ): [Order!]!
+  "주문 환불"
+  refundOrder(storeId: ID!, orderId: ID!, amount: Float!): Order!
 }
 
 

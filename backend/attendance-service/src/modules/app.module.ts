@@ -5,6 +5,8 @@ import {
   ApolloFederationDriverConfig,
 } from '@nestjs/apollo';
 import { AttendanceResolver } from '../resolvers/attendance.resolver';
+import { EmployeeResolver } from '../resolvers/employee.resolver';
+import { ReportResolver } from '../resolvers/report.resolver';
 
 @Module({
   imports: [
@@ -15,6 +17,6 @@ import { AttendanceResolver } from '../resolvers/attendance.resolver';
       sortSchema: true,
     }),
   ],
-  providers: [AttendanceResolver],
+  providers: [AttendanceResolver, EmployeeResolver, ReportResolver],
 })
 export class AppModule {}

@@ -1,8 +1,22 @@
 import cors from 'cors';
-import express from 'express';
+import express, { Request } from 'express';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloGateway, IntrospectAndCompose } from '@apollo/gateway';
+import {
+  authMiddleware,
+  AuthenticatedRequest,
+} from './middleware/auth.middleware';
+import {
+  requestIdMiddleware,
+  errorLoggingMiddleware,
+  RequestWithId,
+} from './middleware/observability.middleware';
+import {
+  securityHeadersMiddleware,
+  createRateLimiter,
+  introspectionControlMiddleware,
+} from './middleware/security.middleware';
 
 async function bootstrap() {
   const port = Number(process.env.PORT ?? 4000);
@@ -48,25 +62,124 @@ async function bootstrap() {
 
   const server = new ApolloServer({
     gateway,
-    // Apollo Server v4에서는 schema가 gateway에서 제공되며, 별도 plugins나 csrf 설정은 미들웨어 단계에서 처리
+    formatError: (formattedError, error) => {
+      // GraphQL 에러 포맷팅
+      const extensions = formattedError.extensions || {};
+
+      return {
+        message: formattedError.message,
+        extensions: {
+          ...extensions,
+          code: extensions.code || 'INTERNAL_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    },
   });
 
   await server.start();
 
   const app = express();
-  app.use(cors({ origin: true, credentials: true }));
 
+  // Trust proxy (rate limiting을 위해)
+  app.set('trust proxy', 1);
+
+  // 보안 헤더 설정
+  app.use(securityHeadersMiddleware());
+
+  // CORS 설정 (프론트엔드 도메인 허용)
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:3000', 'http://localhost:5173'];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS 정책에 의해 차단되었습니다.'));
+        }
+      },
+      credentials: true,
+    })
+  );
+
+  // 요청 ID 및 로깅 미들웨어
+  app.use(requestIdMiddleware);
+
+  // Rate Limiting
+  app.use('/graphql', createRateLimiter());
+
+  // 헬스 체크 엔드포인트
+  app.get('/health', (_req: Request, res: any) => {
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      service: 'gateway',
+    });
+  });
+
+  app.get('/healthz', (_req: Request, res: any) => {
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      service: 'gateway',
+    });
+  });
+
+  // GraphQL Introspection 제어
+  app.use(introspectionControlMiddleware);
+
+  // JWT 인증 미들웨어
+  app.use(authMiddleware);
+
+  // GraphQL 엔드포인트
   app.use(
     '/graphql',
     express.json(),
     expressMiddleware(server, {
-      context: async () => ({}),
+      context: async ({
+        req,
+      }: {
+        req: AuthenticatedRequest & RequestWithId;
+      }) => {
+        // 요청 컨텍스트에 사용자 정보 및 요청 ID 주입
+        return {
+          user: req.user,
+          requestId: req.requestId,
+        };
+      },
     }) as express.RequestHandler
   );
+
+  // 에러 로깅 미들웨어 (마지막에 위치)
+  app.use(errorLoggingMiddleware);
+
+  // 전역 에러 핸들러
+  app.use((err: Error, req: Request, res: any, next: any) => {
+    if (res.headersSent) {
+      return next(err);
+    }
+
+    res.status(500).json({
+      errors: [
+        {
+          message: '서버 내부 오류가 발생했습니다.',
+          extensions: {
+            code: 'INTERNAL_SERVER_ERROR',
+            timestamp: new Date().toISOString(),
+          },
+        },
+      ],
+    });
+  });
 
   app.listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`Gateway running at http://localhost:${port}/graphql`);
+    // eslint-disable-next-line no-console
+    console.log(`Health check available at http://localhost:${port}/health`);
   });
 }
 
