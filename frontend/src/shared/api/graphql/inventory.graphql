@@ -1,0 +1,188 @@
+# Purchase Order 관련 쿼리/뮤테이션
+
+query GetPurchaseOrder($id: ID!) {
+  purchaseOrder(id: $id) {
+    id
+    storeId
+    sku
+    requestedQuantity
+    approvedQuantity
+    receivedQuantity
+    status
+    requestedBy
+    approvedBy
+    requestedAt
+    approvedAt
+    receivedAt
+    notes
+  }
+}
+
+query GetPurchaseOrders(
+  $storeId: ID
+  $sku: ID
+  $status: PurchaseOrderStatus
+) {
+  purchaseOrders(storeId: $storeId, sku: $sku, status: $status) {
+    id
+    storeId
+    sku
+    requestedQuantity
+    approvedQuantity
+    receivedQuantity
+    status
+    requestedBy
+    approvedBy
+    requestedAt
+    approvedAt
+    receivedAt
+    notes
+  }
+}
+
+mutation CreatePurchaseOrder($input: CreatePurchaseOrderInput!) {
+  createPurchaseOrder(input: $input) {
+    id
+    storeId
+    sku
+    requestedQuantity
+    approvedQuantity
+    receivedQuantity
+    status
+    requestedBy
+    approvedBy
+    requestedAt
+    approvedAt
+    receivedAt
+    notes
+  }
+}
+
+mutation ApprovePurchaseOrder(
+  $id: ID!
+  $approvedQuantity: Int!
+  $notes: String
+) {
+  approvePurchaseOrder(id: $id, approvedQuantity: $approvedQuantity, notes: $notes) {
+    id
+    storeId
+    sku
+    requestedQuantity
+    approvedQuantity
+    receivedQuantity
+    status
+    requestedBy
+    approvedBy
+    requestedAt
+    approvedAt
+    receivedAt
+    notes
+  }
+}
+
+mutation RejectPurchaseOrder($id: ID!, $notes: String!) {
+  rejectPurchaseOrder(id: $id, notes: $notes) {
+    id
+    storeId
+    sku
+    requestedQuantity
+    approvedQuantity
+    receivedQuantity
+    status
+    requestedBy
+    approvedBy
+    requestedAt
+    approvedAt
+    receivedAt
+    notes
+  }
+}
+
+mutation ReceiveInventory(
+  $purchaseOrderId: ID!
+  $receivedQuantity: Int!
+  $notes: String
+) {
+  receiveInventory(
+    purchaseOrderId: $purchaseOrderId
+    receivedQuantity: $receivedQuantity
+    notes: $notes
+  ) {
+    id
+    storeId
+    sku
+    requestedQuantity
+    approvedQuantity
+    receivedQuantity
+    status
+    requestedBy
+    approvedBy
+    requestedAt
+    approvedAt
+    receivedAt
+    notes
+  }
+}
+
+# Inventory 관련 쿼리/뮤테이션
+
+query GetReorderRecommendations($storeId: ID, $sku: ID) {
+  reorderRecommendations(storeId: $storeId, sku: $sku) {
+    storeId
+    sku
+    productName
+    currentQuantity
+    reorderPoint
+    recommendedQuantity
+    priority
+    urgency
+  }
+}
+
+query GetInventoryAuditHistory(
+  $storeId: ID
+  $sku: ID
+  $startDate: String!
+  $endDate: String!
+) {
+  inventoryAuditHistory(
+    storeId: $storeId
+    sku: $sku
+    startDate: $startDate
+    endDate: $endDate
+  ) {
+    id
+    storeId
+    sku
+    previousQuantity
+    newQuantity
+    auditDate
+    performedBy
+    notes
+  }
+}
+
+mutation SubmitInventoryCount($input: SubmitInventoryCountInput!) {
+  submitInventoryCount(input: $input) {
+    storeId
+    sku
+    quantityOnHand
+    reserved
+    reorderPoint
+    lastAuditAt
+    updatedAt
+  }
+}
+
+mutation SetReorderPoint($input: SetReorderPointInput!) {
+  setReorderPoint(input: $input) {
+    storeId
+    sku
+    quantityOnHand
+    reserved
+    reorderPoint
+    lastAuditAt
+    updatedAt
+  }
+}
+

@@ -1,0 +1,189 @@
+# Sales 리포트 관련 쿼리
+
+query GetDailySales($storeId: ID, $date: String!) {
+  dailySales(storeId: $storeId, date: $date) {
+    date
+    storeId
+    totalSales
+    transactionCount
+    averageTransactionValue
+    channelBreakdown {
+      channel
+      totalSales
+      transactionCount
+    }
+  }
+}
+
+query GetWeeklySales($storeId: ID, $weekStart: String!) {
+  weeklySales(storeId: $storeId, weekStart: $weekStart) {
+    weekStart
+    weekEnd
+    storeId
+    totalSales
+    transactionCount
+    averageTransactionValue
+    previousWeekSales
+    growthRate
+    dailySales {
+      date
+      storeId
+      totalSales
+      transactionCount
+      averageTransactionValue
+      channelBreakdown {
+        channel
+        totalSales
+        transactionCount
+      }
+    }
+  }
+}
+
+query GetMonthlySales($storeId: ID, $year: Int!, $month: Int!) {
+  monthlySales(storeId: $storeId, year: $year, month: $month) {
+    year
+    month
+    storeId
+    totalSales
+    transactionCount
+    averageTransactionValue
+    previousMonthSales
+    growthRate
+    dailySales {
+      date
+      storeId
+      totalSales
+      transactionCount
+      averageTransactionValue
+      channelBreakdown {
+        channel
+        totalSales
+        transactionCount
+      }
+    }
+  }
+}
+
+query GetSalesDashboard(
+  $storeId: ID
+  $startDate: String!
+  $endDate: String!
+) {
+  salesDashboard(storeId: $storeId, startDate: $startDate, endDate: $endDate) {
+    period
+    totalSales
+    totalTransactions
+    averageTransactionValue
+    storeSummary {
+      storeId
+      totalSales
+      transactionCount
+      averageTransactionValue
+    }
+    topStores {
+      storeId
+      totalSales
+      transactionCount
+      averageTransactionValue
+    }
+    bottomStores {
+      storeId
+      totalSales
+      transactionCount
+      averageTransactionValue
+    }
+    channelDistribution {
+      channel
+      totalSales
+      transactionCount
+    }
+    trend {
+      date
+      storeId
+      totalSales
+      transactionCount
+      averageTransactionValue
+      channelBreakdown {
+        channel
+        totalSales
+        transactionCount
+      }
+    }
+  }
+}
+
+# Order 관련 쿼리/뮤테이션
+
+query GetOrder($storeId: ID!, $orderId: ID!) {
+  order(storeId: $storeId, orderId: $orderId) {
+    storeId
+    orderId
+    createdAt
+    settledAt
+    totalAmount
+    currency
+    status
+    channel
+    lineItems {
+      sku
+      name
+      unitPrice
+      quantity
+      subtotal
+    }
+  }
+}
+
+query GetOrders(
+  $storeId: ID
+  $startDate: String!
+  $endDate: String!
+  $channel: String
+  $status: OrderStatus
+) {
+  orders(
+    storeId: $storeId
+    startDate: $startDate
+    endDate: $endDate
+    channel: $channel
+    status: $status
+  ) {
+    storeId
+    orderId
+    createdAt
+    settledAt
+    totalAmount
+    currency
+    status
+    channel
+    lineItems {
+      sku
+      name
+      unitPrice
+      quantity
+      subtotal
+    }
+  }
+}
+
+mutation RefundOrder($storeId: ID!, $orderId: ID!, $amount: Float!) {
+  refundOrder(storeId: $storeId, orderId: $orderId, amount: $amount) {
+    storeId
+    orderId
+    createdAt
+    settledAt
+    totalAmount
+    currency
+    status
+    channel
+    lineItems {
+      sku
+      name
+      unitPrice
+      quantity
+      subtotal
+    }
+  }
+}
+

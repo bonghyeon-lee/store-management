@@ -1,0 +1,246 @@
+# Employee 관련 쿼리/뮤테이션
+
+query GetEmployee($id: ID!) {
+  employee(id: $id) {
+    id
+    name
+    email
+    phone
+    role
+    employmentStatus
+    assignedStoreIds
+    createdAt
+    updatedAt
+  }
+}
+
+query GetEmployees($storeId: ID, $role: String, $status: EmploymentStatus) {
+  employees(storeId: $storeId, role: $role, status: $status) {
+    id
+    name
+    email
+    phone
+    role
+    employmentStatus
+    assignedStoreIds
+    createdAt
+    updatedAt
+  }
+}
+
+mutation CreateEmployee($input: CreateEmployeeInput!) {
+  createEmployee(input: $input) {
+    id
+    name
+    email
+    phone
+    role
+    employmentStatus
+    assignedStoreIds
+    createdAt
+    updatedAt
+  }
+}
+
+mutation UpdateEmployee($id: ID!, $input: UpdateEmployeeInput!) {
+  updateEmployee(id: $id, input: $input) {
+    id
+    name
+    email
+    phone
+    role
+    employmentStatus
+    assignedStoreIds
+    createdAt
+    updatedAt
+  }
+}
+
+mutation DeleteEmployee($id: ID!) {
+  deleteEmployee(id: $id)
+}
+
+# Attendance 관련 쿼리/뮤테이션
+
+query GetAttendance($storeId: ID!, $employeeId: ID!, $date: String!) {
+  attendance(storeId: $storeId, employeeId: $employeeId, date: $date) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+query GetAttendanceRecords(
+  $storeId: ID
+  $employeeId: ID
+  $startDate: String!
+  $endDate: String!
+  $status: AttendanceStatus
+) {
+  attendanceRecords(
+    storeId: $storeId
+    employeeId: $employeeId
+    startDate: $startDate
+    endDate: $endDate
+    status: $status
+  ) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+query GetPendingApprovals($storeId: ID, $managerId: ID) {
+  pendingApprovals(storeId: $storeId, managerId: $managerId) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+mutation CheckIn($input: CheckInInput!) {
+  checkIn(input: $input) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+mutation CheckOut($input: CheckOutInput!) {
+  checkOut(input: $input) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+mutation ApproveAttendance(
+  $storeId: ID!
+  $employeeId: ID!
+  $date: String!
+  $notes: String
+) {
+  approveAttendance(storeId: $storeId, employeeId: $employeeId, date: $date, notes: $notes) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+mutation RejectAttendance(
+  $storeId: ID!
+  $employeeId: ID!
+  $date: String!
+  $notes: String!
+) {
+  rejectAttendance(storeId: $storeId, employeeId: $employeeId, date: $date, notes: $notes) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+mutation RequestAttendanceCorrection(
+  $storeId: ID!
+  $employeeId: ID!
+  $date: String!
+  $notes: String!
+) {
+  requestAttendanceCorrection(
+    storeId: $storeId
+    employeeId: $employeeId
+    date: $date
+    notes: $notes
+  ) {
+    storeId
+    employeeId
+    date
+    checkInAt
+    checkOutAt
+    status
+    notes
+    workingHours
+  }
+}
+
+# Report 관련 쿼리
+
+query GetDailyAttendanceReport($storeId: ID, $date: String!) {
+  dailyAttendanceReport(storeId: $storeId, date: $date) {
+    date
+    storeId
+    attendanceRate
+    lateCount
+    absentCount
+    employeeStats {
+      employeeId
+      employeeName
+      checkInAt
+      checkOutAt
+      workingHours
+      status
+    }
+  }
+}
+
+query GetWeeklyAttendanceReport($storeId: ID, $weekStart: String!) {
+  weeklyAttendanceReport(storeId: $storeId, weekStart: $weekStart) {
+    weekStart
+    weekEnd
+    storeId
+    attendanceRate
+    averageWorkingHours
+    totalWorkingHours
+    dailyReports {
+      date
+      storeId
+      attendanceRate
+      lateCount
+      absentCount
+      employeeStats {
+        employeeId
+        employeeName
+        checkInAt
+        checkOutAt
+        workingHours
+        status
+      }
+    }
+  }
+}
+
