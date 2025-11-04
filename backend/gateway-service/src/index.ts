@@ -26,6 +26,9 @@ async function bootstrap() {
   const inventoryUrl =
     process.env.INVENTORY_URL ?? 'http://localhost:4002/graphql';
   const salesUrl = process.env.SALES_URL ?? 'http://localhost:4003/graphql';
+  const notificationUrl =
+    process.env.NOTIFICATION_URL ?? 'http://localhost:4004/graphql';
+  const authUrl = process.env.AUTH_URL ?? 'http://localhost:4005/graphql';
 
   async function waitForUrl(url: string, attempts = 30, delayMs = 2000) {
     for (let i = 0; i < attempts; i++) {
@@ -48,6 +51,8 @@ async function bootstrap() {
     waitForUrl(attendanceUrl),
     waitForUrl(inventoryUrl),
     waitForUrl(salesUrl),
+    waitForUrl(notificationUrl),
+    waitForUrl(authUrl),
   ]);
 
   const gateway = new ApolloGateway({
@@ -56,6 +61,8 @@ async function bootstrap() {
         { name: 'attendance', url: attendanceUrl },
         { name: 'inventory', url: inventoryUrl },
         { name: 'sales', url: salesUrl },
+        { name: 'notification', url: notificationUrl },
+        { name: 'auth', url: authUrl },
       ],
     }),
   });

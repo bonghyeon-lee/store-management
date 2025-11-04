@@ -27,15 +27,15 @@ RUN npm ci --only=production
 
 # 빌드된 파일 복사
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
+# schema.gql은 런타임에 애플리케이션 시작 시 자동 생성됨 (autoSchemaFile 옵션)
 
 # 포트 노출
-EXPOSE 4000
+EXPOSE 4005
 
 # 헬스 체크
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+    CMD node -e "require('http').get('http://localhost:4005/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # 실행
-CMD ["node", "-r", "tsconfig-paths/register", "dist/index.js"]
+CMD ["node", "-r", "tsconfig-paths/register", "dist/main.js"]
 

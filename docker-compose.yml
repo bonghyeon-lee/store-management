@@ -14,7 +14,11 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-storeuser}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-storeuser} -d ${POSTGRES_DB:-storemanagement}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,7 +67,13 @@ services:
     networks:
       - store-management-net
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -91,7 +101,13 @@ services:
     networks:
       - store-management-net
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -119,7 +135,81 @@ services:
     networks:
       - store-management-net
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4003/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4003/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+      target: production
+    image: store-management/notification-service:latest
+    container_name: notification-service
+    environment:
+      - PORT=4004
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${NOTIFICATION_DATABASE_URL:-postgresql://storeuser:storepass@postgres:5432/storemanagement}
+    ports:
+      - "4004:4004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4004/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+      target: production
+    image: store-management/auth-service:latest
+    container_name: auth-service
+    environment:
+      - PORT=4005
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${AUTH_DATABASE_URL:-postgresql://storeuser:storepass@postgres:5432/storemanagement}
+    ports:
+      - "4005:4005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4005/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -138,6 +228,8 @@ services:
       - ATTENDANCE_URL=http://attendance-service:4001/graphql
       - INVENTORY_URL=http://inventory-service:4002/graphql
       - SALES_URL=http://sales-service:4003/graphql
+      - NOTIFICATION_URL=http://notification-service:4004/graphql
+      - AUTH_URL=http://auth-service:4005/graphql
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
     ports:
@@ -149,11 +241,21 @@ services:
         condition: service_healthy
       sales-service:
         condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - store-management-net
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -176,7 +278,15 @@ services:
     networks:
       - store-management-net
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
