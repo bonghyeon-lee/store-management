@@ -51,7 +51,7 @@ type InventoryItem {
 
 type Mutation {
   """재고 조정 (기존)"""
-  adjustInventory(delta: Float!, reason: String, sku: String!, storeId: String!): InventoryItem!
+  adjustInventory(delta: Float!, reason: String, sku: ID!, storeId: ID!): InventoryItem!
 
   """발주 승인"""
   approvePurchaseOrder(approvedQuantity: Float!, id: String!, notes: String): PurchaseOrder!
@@ -69,7 +69,7 @@ type Mutation {
   receiveInventory(notes: String, purchaseOrderId: String!, receivedQuantity: Float!): PurchaseOrder!
 
   """재고 실사 (기존)"""
-  reconcileInventory(quantity: Float!, reason: String, sku: String!, storeId: String!): InventoryItem!
+  reconcileInventory(quantity: Float!, reason: String, sku: ID!, storeId: ID!): InventoryItem!
 
   """발주 거부"""
   rejectPurchaseOrder(id: String!, notes: String!): PurchaseOrder!
@@ -139,10 +139,10 @@ enum PurchaseOrderStatus {
 
 type Query {
   """재고 실사 이력 조회"""
-  inventoryAuditHistory(endDate: String!, sku: String, startDate: String!, storeId: String): [InventoryAudit!]!
+  inventoryAuditHistory(endDate: String!, sku: ID, startDate: String!, storeId: ID): [InventoryAudit!]!
 
   """재고 항목 조회"""
-  inventoryItem(sku: String!, storeId: String!): InventoryItem
+  inventoryItem(sku: ID!, storeId: ID!): InventoryItem
 
   """상품 목록 (기존 호환)"""
   products: [Product!]!
@@ -151,22 +151,22 @@ type Query {
   purchaseOrder(id: String!): PurchaseOrder
 
   """발주 목록 조회"""
-  purchaseOrders(sku: String, status: PurchaseOrderStatus, storeId: String): [PurchaseOrder!]!
+  purchaseOrders(sku: ID, status: PurchaseOrderStatus, storeId: ID): [PurchaseOrder!]!
 
   """리오더 추천 목록 조회"""
-  reorderRecommendations(sku: String, storeId: String): [ReorderRecommendation!]!
+  reorderRecommendations(sku: ID, storeId: ID): [ReorderRecommendation!]!
 
   """SKU 조회"""
   sku(id: String!): Product
 
   """SKU별 재고 조회 (모든 지점)"""
-  skuInventories(sku: String!): [InventoryItem!]!
+  skuInventories(sku: ID!): [InventoryItem!]!
 
   """SKU 목록 조회"""
   skus(category: String, isActive: Boolean): [Product!]!
 
   """지점별 재고 목록 조회"""
-  storeInventories(sku: String, storeId: String!): [InventoryItem!]!
+  storeInventories(sku: ID, storeId: ID!): [InventoryItem!]!
 }
 
 """리오더 추천"""

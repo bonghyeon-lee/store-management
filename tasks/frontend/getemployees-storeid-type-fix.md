@@ -1,6 +1,6 @@
 # 백엔드 GraphQL resolver storeId/employeeId ID 타입 수정
 
-## 상태: 📋 TODO
+## 상태: ✅ 완료
 
 ## 문제 상황
 
@@ -118,66 +118,68 @@ employees(
 
 ### 2. 타입 불일치 원인 파악
 
-- [ ] NestJS GraphQL이 `string` 타입을 `String` 스칼라로 매핑하는 것 확인
-- [ ] `GraphQLID` 또는 `ID` 타입을 사용해야 `ID` 스칼라로 생성되는 것 확인
-- [ ] 모든 영향받는 resolver 파라미터 목록 작성
-  - [ ] `storeId: string` → `storeId: GraphQLID`
-  - [ ] `employeeId: string` → `employeeId: GraphQLID`
-  - [ ] `managerId: string` → `managerId: GraphQLID`
-  - [ ] `orderId: string` → `orderId: GraphQLID`
-  - [ ] `sku: string` → `sku: GraphQLID`
+- [x] NestJS GraphQL이 `string` 타입을 `String` 스칼라로 매핑하는 것 확인
+- [x] `GraphQLID` 또는 `ID` 타입을 사용해야 `ID` 스칼라로 생성되는 것 확인
+- [x] 모든 영향받는 resolver 파라미터 목록 작성
+  - [x] `storeId: string` → `storeId: GraphQLID`
+  - [x] `employeeId: string` → `employeeId: GraphQLID`
+  - [x] `managerId: string` → `managerId: GraphQLID`
+  - [x] `orderId: string` → `orderId: GraphQLID`
+  - [x] `sku: string` → `sku: GraphQLID`
 
 ### 3. 수정 작업 수행
 
 #### 3.1 Attendance Service Resolver 수정
 
-- [ ] `backend/attendance-service/src/resolvers/employee.resolver.ts` 수정
-  - [ ] `ID` 또는 `GraphQLID` import 추가
-  - [ ] `employees` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `employee` 메서드: `id` 파라미터를 `GraphQLID` 타입으로 변경 (필요시)
-  - [ ] `updateEmployee` 메서드: `id` 파라미터를 `GraphQLID` 타입으로 변경 (필요시)
-  - [ ] `deleteEmployee` 메서드: `id` 파라미터를 `GraphQLID` 타입으로 변경 (필요시)
+- [x] `backend/attendance-service/src/resolvers/employee.resolver.ts` 수정
+  - [x] `ID` 또는 `GraphQLID` import 추가
+  - [x] `employees` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `employee` 메서드: `id` 파라미터를 `GraphQLID` 타입으로 변경 (필요시)
+  - [x] `updateEmployee` 메서드: `id` 파라미터를 `GraphQLID` 타입으로 변경 (필요시)
+  - [x] `deleteEmployee` 메서드: `id` 파라미터를 `GraphQLID` 타입으로 변경 (필요시)
 
-- [ ] `backend/attendance-service/src/resolvers/attendance.resolver.ts` 수정
-  - [ ] `ID` 또는 `GraphQLID` import 추가
-  - [ ] `attendance` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `attendanceRecords` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `pendingApprovals` 메서드: `storeId`, `managerId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `approveAttendance` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `rejectAttendance` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `requestAttendanceCorrection` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
+- [x] `backend/attendance-service/src/resolvers/attendance.resolver.ts` 수정
+  - [x] `ID` 또는 `GraphQLID` import 추가
+  - [x] `attendance` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `attendanceRecords` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `pendingApprovals` 메서드: `storeId`, `managerId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `approveAttendance` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `rejectAttendance` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `requestAttendanceCorrection` 메서드: `storeId`, `employeeId` 파라미터를 `GraphQLID` 타입으로 변경
 
-- [ ] `backend/attendance-service/src/resolvers/report.resolver.ts` 수정
-  - [ ] `ID` 또는 `GraphQLID` import 추가
-  - [ ] `dailyAttendanceReport` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `weeklyAttendanceReport` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+- [x] `backend/attendance-service/src/resolvers/report.resolver.ts` 수정
+  - [x] `ID` 또는 `GraphQLID` import 추가
+  - [x] `dailyAttendanceReport` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `weeklyAttendanceReport` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
 
 #### 3.2 Sales Service Resolver 수정
 
-- [ ] `backend/sales-service/src/resolvers/sales.resolver.ts` 수정
-  - [ ] `ID` 또는 `GraphQLID` import 추가
-  - [ ] `dailySales` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `weeklySales` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `monthlySales` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `salesDashboard` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `order` 메서드: `storeId`, `orderId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `orders` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `refundOrder` 메서드: `storeId`, `orderId` 파라미터를 `GraphQLID` 타입으로 변경
+- [x] `backend/sales-service/src/resolvers/sales.resolver.ts` 수정
+  - [x] `ID` 또는 `GraphQLID` import 추가
+  - [x] `dailySales` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `weeklySales` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `monthlySales` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `salesDashboard` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `order` 메서드: `storeId`, `orderId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `orders` 메서드: `storeId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `refundOrder` 메서드: `storeId`, `orderId` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `recordSale` 메서드: `storeId`, `orderId` 파라미터를 `GraphQLID` 타입으로 변경
 
 #### 3.3 Inventory Service Resolver 수정
 
-- [ ] `backend/inventory-service/src/resolvers/inventory.resolver.ts` 수정
-  - [ ] `ID` 또는 `GraphQLID` import 추가
-  - [ ] `inventoryItem` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `storeInventories` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `adjustInventory` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `reconcileInventory` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `inventoryAuditHistory` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
-  - [ ] `reorderRecommendations` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+- [x] `backend/inventory-service/src/resolvers/inventory.resolver.ts` 수정
+  - [x] `ID` 또는 `GraphQLID` import 추가
+  - [x] `inventoryItem` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `storeInventories` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `adjustInventory` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `reconcileInventory` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `inventoryAuditHistory` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `reorderRecommendations` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+  - [x] `skuInventories` 메서드: `sku` 파라미터를 `GraphQLID` 타입으로 변경
 
-- [ ] `backend/inventory-service/src/resolvers/purchase-order.resolver.ts` 수정
-  - [ ] `ID` 또는 `GraphQLID` import 추가
-  - [ ] `purchaseOrders` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
+- [x] `backend/inventory-service/src/resolvers/purchase-order.resolver.ts` 수정
+  - [x] `ID` 또는 `GraphQLID` import 추가
+  - [x] `purchaseOrders` 메서드: `storeId`, `sku` 파라미터를 `GraphQLID` 타입으로 변경
 
 #### 3.4 Input 타입 확인 및 수정 (필요시)
 

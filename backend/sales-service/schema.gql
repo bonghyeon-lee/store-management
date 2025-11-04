@@ -56,13 +56,13 @@ type MonthlySales {
 
 type Mutation {
   """매출 기록 (단일)"""
-  recordSale(channel: String!, currency: String!, lineItems: [RecordLineItemInput!]!, orderId: String!, settledAt: String, storeId: String!): Order!
+  recordSale(channel: String!, currency: String!, lineItems: [RecordLineItemInput!]!, orderId: ID!, settledAt: String, storeId: ID!): Order!
 
   """매출 기록 (배치)"""
   recordSalesBatch(sales: [RecordSaleInput!]!): [Order!]!
 
   """주문 환불"""
-  refundOrder(amount: Float!, orderId: String!, storeId: String!): Order!
+  refundOrder(amount: Float!, orderId: ID!, storeId: ID!): Order!
 }
 
 """주문"""
@@ -93,24 +93,24 @@ type Query {
   dailySales(
     """YYYY-MM-DD"""
     date: String!
-    storeId: String
+    storeId: ID
   ): DailySales!
 
   """월별 매출 집계"""
-  monthlySales(month: Float!, storeId: String, year: Float!): MonthlySales!
+  monthlySales(month: Float!, storeId: ID, year: Float!): MonthlySales!
 
   """주문 조회"""
-  order(orderId: String!, storeId: String!): Order
+  order(orderId: ID!, storeId: ID!): Order
 
   """주문 목록 조회"""
-  orders(channel: String, endDate: String!, startDate: String!, status: OrderStatus, storeId: String): [Order!]!
+  orders(channel: String, endDate: String!, startDate: String!, status: OrderStatus, storeId: ID): [Order!]!
 
   """매출 대시보드"""
-  salesDashboard(endDate: String!, startDate: String!, storeId: String): SalesDashboard!
+  salesDashboard(endDate: String!, startDate: String!, storeId: ID): SalesDashboard!
 
   """주별 매출 집계"""
   weeklySales(
-    storeId: String
+    storeId: ID
 
     """YYYY-MM-DD (주 시작일)"""
     weekStart: String!

@@ -1,4 +1,4 @@
-import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
+import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
 import { Employee, EmploymentStatus } from '../models/employee.model';
 import {
   CreateEmployeeInput,
@@ -40,13 +40,13 @@ initializeSampleData();
 @Resolver(() => Employee)
 export class EmployeeResolver {
   @Query(() => Employee, { nullable: true, description: '직원 조회' })
-  employee(@Args('id') id: string): Employee | null {
+  employee(@Args('id', { type: () => ID }) id: string): Employee | null {
     return employees.get(id) || null;
   }
 
   @Query(() => [Employee], { description: '직원 목록 조회' })
   employees(
-    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
     @Args('role', { nullable: true }) role?: string,
     @Args('status', { type: () => EmploymentStatus, nullable: true })
     status?: EmploymentStatus
@@ -90,7 +90,7 @@ export class EmployeeResolver {
 
   @Mutation(() => Employee, { description: '직원 정보 수정' })
   updateEmployee(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateEmployeeInput
   ): Employee {
     const employee = employees.get(id);
@@ -118,7 +118,7 @@ export class EmployeeResolver {
   }
 
   @Mutation(() => Boolean, { description: '직원 삭제/비활성화' })
-  deleteEmployee(@Args('id') id: string): boolean {
+  deleteEmployee(@Args('id', { type: () => ID }) id: string): boolean {
     const employee = employees.get(id);
     if (!employee) {
       return false;

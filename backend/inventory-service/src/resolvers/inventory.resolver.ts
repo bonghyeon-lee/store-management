@@ -1,4 +1,4 @@
-import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
+import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
 import {
   InventoryItem,
   InventoryAudit,
@@ -45,8 +45,8 @@ initializeSampleData();
 export class InventoryResolver {
   @Query(() => InventoryItem, { nullable: true, description: '재고 항목 조회' })
   inventoryItem(
-    @Args('storeId') storeId: string,
-    @Args('sku') sku: string
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('sku', { type: () => ID }) sku: string
   ): InventoryItem | null {
     const key = getInventoryKey(storeId, sku);
     return inventoryItems.get(key) || null;
@@ -54,8 +54,8 @@ export class InventoryResolver {
 
   @Query(() => [InventoryItem], { description: '지점별 재고 목록 조회' })
   storeInventories(
-    @Args('storeId') storeId: string,
-    @Args('sku', { nullable: true }) sku?: string
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('sku', { type: () => ID, nullable: true }) sku?: string
   ): InventoryItem[] {
     const items = Array.from(inventoryItems.values());
     let filtered = items.filter((item) => item.storeId === storeId);
@@ -68,7 +68,7 @@ export class InventoryResolver {
   }
 
   @Query(() => [InventoryItem], { description: 'SKU별 재고 조회 (모든 지점)' })
-  skuInventories(@Args('sku') sku: string): InventoryItem[] {
+  skuInventories(@Args('sku', { type: () => ID }) sku: string): InventoryItem[] {
     const items = Array.from(inventoryItems.values());
     return items.filter((item) => item.sku === sku);
   }
@@ -77,8 +77,8 @@ export class InventoryResolver {
   inventoryAuditHistory(
     @Args('startDate') startDate: string,
     @Args('endDate') endDate: string,
-    @Args('storeId', { nullable: true }) storeId?: string,
-    @Args('sku', { nullable: true }) sku?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
+    @Args('sku', { type: () => ID, nullable: true }) sku?: string
   ): InventoryAudit[] {
     let filtered = inventoryAudits.filter((audit) => {
       return audit.auditDate >= startDate && audit.auditDate <= endDate;
@@ -99,8 +99,8 @@ export class InventoryResolver {
     description: '리오더 추천 목록 조회',
   })
   reorderRecommendations(
-    @Args('storeId', { nullable: true }) storeId?: string,
-    @Args('sku', { nullable: true }) sku?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
+    @Args('sku', { type: () => ID, nullable: true }) sku?: string
   ): ReorderRecommendation[] {
     const items = Array.from(inventoryItems.values());
     let filtered = items.filter(
@@ -215,8 +215,8 @@ export class InventoryResolver {
 
   @Mutation(() => InventoryItem, { description: '재고 조정 (기존)' })
   adjustInventory(
-    @Args('storeId') storeId: string,
-    @Args('sku') sku: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('sku', { type: () => ID }) sku: string,
     @Args('delta') delta: number,
     @Args('reason', { nullable: true }) reason?: string
   ): InventoryItem {
@@ -244,8 +244,8 @@ export class InventoryResolver {
 
   @Mutation(() => InventoryItem, { description: '재고 실사 (기존)' })
   reconcileInventory(
-    @Args('storeId') storeId: string,
-    @Args('sku') sku: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('sku', { type: () => ID }) sku: string,
     @Args('quantity') quantity: number,
     @Args('reason', { nullable: true }) reason?: string
   ): InventoryItem {

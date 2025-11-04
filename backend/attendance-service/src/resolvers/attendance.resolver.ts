@@ -1,4 +1,4 @@
-import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
+import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
 import { Attendance, AttendanceStatus } from '../models/attendance.model';
 import { CheckInInput, CheckOutInput } from '../models/inputs.model';
 
@@ -30,8 +30,8 @@ const calculateWorkingHours = (
 export class AttendanceResolver {
   @Query(() => Attendance, { nullable: true, description: '출퇴근 기록 조회' })
   attendance(
-    @Args('storeId') storeId: string,
-    @Args('employeeId') employeeId: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('employeeId', { type: () => ID }) employeeId: string,
     @Args('date') date: string
   ): Attendance | null {
     const key = getAttendanceKey(storeId, employeeId, date);
@@ -42,8 +42,8 @@ export class AttendanceResolver {
   attendanceRecords(
     @Args('startDate') startDate: string,
     @Args('endDate') endDate: string,
-    @Args('storeId', { nullable: true }) storeId?: string,
-    @Args('employeeId', { nullable: true }) employeeId?: string,
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
+    @Args('employeeId', { type: () => ID, nullable: true }) employeeId?: string,
     @Args('status', { type: () => AttendanceStatus, nullable: true })
     status?: AttendanceStatus
   ): Attendance[] {
@@ -71,8 +71,8 @@ export class AttendanceResolver {
 
   @Query(() => [Attendance], { description: '승인 대기 목록 조회' })
   pendingApprovals(
-    @Args('storeId', { nullable: true }) storeId?: string,
-    @Args('managerId', { nullable: true }) managerId?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
+    @Args('managerId', { type: () => ID, nullable: true }) managerId?: string
   ): Attendance[] {
     const records = Array.from(attendanceRecords.values());
 
@@ -141,8 +141,8 @@ export class AttendanceResolver {
 
   @Mutation(() => Attendance, { description: '근태 승인' })
   approveAttendance(
-    @Args('storeId') storeId: string,
-    @Args('employeeId') employeeId: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('employeeId', { type: () => ID }) employeeId: string,
     @Args('date') date: string,
     @Args('notes', { nullable: true }) notes?: string
   ): Attendance {
@@ -164,8 +164,8 @@ export class AttendanceResolver {
 
   @Mutation(() => Attendance, { description: '근태 거부' })
   rejectAttendance(
-    @Args('storeId') storeId: string,
-    @Args('employeeId') employeeId: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('employeeId', { type: () => ID }) employeeId: string,
     @Args('date') date: string,
     @Args('notes') notes: string
   ): Attendance {
@@ -185,8 +185,8 @@ export class AttendanceResolver {
 
   @Mutation(() => Attendance, { description: '근태 수정 요청' })
   requestAttendanceCorrection(
-    @Args('storeId') storeId: string,
-    @Args('employeeId') employeeId: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('employeeId', { type: () => ID }) employeeId: string,
     @Args('date') date: string,
     @Args('notes') notes: string
   ): Attendance {

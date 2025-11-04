@@ -96,7 +96,7 @@ enum EmploymentStatus {
 
 type Mutation {
   """근태 승인"""
-  approveAttendance(date: String!, employeeId: String!, notes: String, storeId: String!): Attendance!
+  approveAttendance(date: String!, employeeId: ID!, notes: String, storeId: ID!): Attendance!
 
   """출근 기록"""
   checkIn(input: CheckInInput!): Attendance!
@@ -108,39 +108,39 @@ type Mutation {
   createEmployee(input: CreateEmployeeInput!): Employee!
 
   """직원 삭제/비활성화"""
-  deleteEmployee(id: String!): Boolean!
+  deleteEmployee(id: ID!): Boolean!
 
   """근태 거부"""
-  rejectAttendance(date: String!, employeeId: String!, notes: String!, storeId: String!): Attendance!
+  rejectAttendance(date: String!, employeeId: ID!, notes: String!, storeId: ID!): Attendance!
 
   """근태 수정 요청"""
-  requestAttendanceCorrection(date: String!, employeeId: String!, notes: String!, storeId: String!): Attendance!
+  requestAttendanceCorrection(date: String!, employeeId: ID!, notes: String!, storeId: ID!): Attendance!
 
   """직원 정보 수정"""
-  updateEmployee(id: String!, input: UpdateEmployeeInput!): Employee!
+  updateEmployee(id: ID!, input: UpdateEmployeeInput!): Employee!
 }
 
 type Query {
   """출퇴근 기록 조회"""
-  attendance(date: String!, employeeId: String!, storeId: String!): Attendance
+  attendance(date: String!, employeeId: ID!, storeId: ID!): Attendance
 
   """출퇴근 기록 목록 조회"""
-  attendanceRecords(employeeId: String, endDate: String!, startDate: String!, status: AttendanceStatus, storeId: String): [Attendance!]!
+  attendanceRecords(employeeId: ID, endDate: String!, startDate: String!, status: AttendanceStatus, storeId: ID): [Attendance!]!
 
   """일별 근태 리포트"""
-  dailyAttendanceReport(date: String!, storeId: String): DailyAttendanceReport!
+  dailyAttendanceReport(date: String!, storeId: ID): DailyAttendanceReport!
 
   """직원 조회"""
-  employee(id: String!): Employee
+  employee(id: ID!): Employee
 
   """직원 목록 조회"""
-  employees(role: String, status: EmploymentStatus, storeId: String): [Employee!]!
+  employees(role: String, status: EmploymentStatus, storeId: ID): [Employee!]!
 
   """승인 대기 목록 조회"""
-  pendingApprovals(managerId: String, storeId: String): [Attendance!]!
+  pendingApprovals(managerId: ID, storeId: ID): [Attendance!]!
 
   """주별 근태 리포트"""
-  weeklyAttendanceReport(storeId: String, weekStart: String!): WeeklyAttendanceReport!
+  weeklyAttendanceReport(storeId: ID, weekStart: String!): WeeklyAttendanceReport!
 }
 
 input UpdateEmployeeInput {

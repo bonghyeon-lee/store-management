@@ -1,4 +1,4 @@
-import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
+import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
 import {
   PurchaseOrder,
   PurchaseOrderStatus,
@@ -21,8 +21,8 @@ export class PurchaseOrderResolver {
 
   @Query(() => [PurchaseOrder], { description: '발주 목록 조회' })
   purchaseOrders(
-    @Args('storeId', { nullable: true }) storeId?: string,
-    @Args('sku', { nullable: true }) sku?: string,
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
+    @Args('sku', { type: () => ID, nullable: true }) sku?: string,
     @Args('status', { type: () => PurchaseOrderStatus, nullable: true })
     status?: PurchaseOrderStatus
   ): PurchaseOrder[] {

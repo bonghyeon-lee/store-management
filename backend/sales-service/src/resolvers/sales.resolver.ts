@@ -1,4 +1,4 @@
-import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
+import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
 import {
   Order,
   OrderStatus,
@@ -83,8 +83,8 @@ const getPreviousMonth = (
 export class SalesResolver {
   @Query(() => Order, { nullable: true, description: '주문 조회' })
   order(
-    @Args('storeId') storeId: string,
-    @Args('orderId') orderId: string
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('orderId', { type: () => ID }) orderId: string
   ): Order | null {
     const key = getOrderKey(storeId, orderId);
     return orders.get(key) || null;
@@ -94,7 +94,7 @@ export class SalesResolver {
   orders(
     @Args('startDate') startDate: string,
     @Args('endDate') endDate: string,
-    @Args('storeId', { nullable: true }) storeId?: string,
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
     @Args('channel', { nullable: true }) channel?: string,
     @Args('status', { type: () => OrderStatus, nullable: true })
     status?: OrderStatus
@@ -123,8 +123,8 @@ export class SalesResolver {
 
   @Mutation(() => Order, { description: '매출 기록 (단일)' })
   recordSale(
-    @Args('storeId') storeId: string,
-    @Args('orderId') orderId: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('orderId', { type: () => ID }) orderId: string,
     @Args('currency') currency: string,
     @Args('channel') channel: string,
     @Args('lineItems', { type: () => [RecordLineItemInput] })
@@ -187,8 +187,8 @@ export class SalesResolver {
 
   @Mutation(() => Order, { description: '주문 환불' })
   refundOrder(
-    @Args('storeId') storeId: string,
-    @Args('orderId') orderId: string,
+    @Args('storeId', { type: () => ID }) storeId: string,
+    @Args('orderId', { type: () => ID }) orderId: string,
     @Args('amount') amount: number
   ): Order {
     const key = getOrderKey(storeId, orderId);
@@ -212,7 +212,7 @@ export class SalesResolver {
   @Query(() => DailySales, { description: '일별 매출 집계' })
   dailySales(
     @Args('date', { description: 'YYYY-MM-DD' }) date: string,
-    @Args('storeId', { nullable: true }) storeId?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string
   ): DailySales {
     const ordersList = Array.from(orders.values());
     let filtered = ordersList.filter((order) => {
@@ -266,7 +266,7 @@ export class SalesResolver {
   weeklySales(
     @Args('weekStart', { description: 'YYYY-MM-DD (주 시작일)' })
     weekStart: string,
-    @Args('storeId', { nullable: true }) storeId?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string
   ): WeeklySales {
     const weekEnd = getWeekEnd(weekStart);
     const weekDates = getWeekDates(weekStart);
@@ -313,7 +313,7 @@ export class SalesResolver {
   monthlySales(
     @Args('year') year: number,
     @Args('month') month: number,
-    @Args('storeId', { nullable: true }) storeId?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string
   ): MonthlySales {
     const monthDates = getMonthDates(year, month);
     const previousMonth = getPreviousMonth(year, month);
@@ -365,7 +365,7 @@ export class SalesResolver {
   salesDashboard(
     @Args('startDate') startDate: string,
     @Args('endDate') endDate: string,
-    @Args('storeId', { nullable: true }) storeId?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string
   ): SalesDashboard {
     const ordersList = Array.from(orders.values());
     let filtered = ordersList.filter((order) => {

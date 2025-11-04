@@ -1,4 +1,4 @@
-import { Query, Resolver, Args } from '@nestjs/graphql';
+import { Query, Resolver, Args, ID } from '@nestjs/graphql';
 import { attendanceRecords } from './attendance.resolver';
 import {
   DailyAttendanceReport,
@@ -39,7 +39,7 @@ export class ReportResolver {
   @Query(() => DailyAttendanceReport, { description: '일별 근태 리포트' })
   dailyAttendanceReport(
     @Args('date') date: string,
-    @Args('storeId', { nullable: true }) storeId?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string
   ): DailyAttendanceReport {
     const records = Array.from(attendanceRecords.values());
     let filtered = records.filter((record) => record.date === date);
@@ -93,7 +93,7 @@ export class ReportResolver {
   @Query(() => WeeklyAttendanceReport, { description: '주별 근태 리포트' })
   weeklyAttendanceReport(
     @Args('weekStart') weekStart: string,
-    @Args('storeId', { nullable: true }) storeId?: string
+    @Args('storeId', { type: () => ID, nullable: true }) storeId?: string
   ): WeeklyAttendanceReport {
     const weekEnd = getWeekEnd(weekStart);
     const weekDates = getWeekDates(weekStart);
