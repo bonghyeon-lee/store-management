@@ -3,6 +3,7 @@ import { useAuth } from '@shared/lib/auth/auth-context';
 import { Button } from '@shared/ui/Button';
 import { apolloClient } from '@app/providers/apollo';
 import { gql } from '@apollo/client';
+import { generateDevJWT } from '@shared/lib/auth/jwt-utils';
 
 const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
@@ -39,12 +40,17 @@ export const LoginPage: React.FC = () => {
 
       // 임시 로그인 처리 (실제 구현 시 제거)
       if (email && password) {
-        const mockToken = 'mock-jwt-token-' + Date.now();
         const mockUser = {
           userId: '1',
           role: 'MANAGER',
           storeIds: ['store-1'],
         };
+        // 실제 JWT 형식의 토큰 생성 (개발 환경용)
+        const mockToken = await generateDevJWT({
+          userId: mockUser.userId,
+          role: mockUser.role,
+          storeIds: mockUser.storeIds,
+        });
         login(mockToken, mockUser);
         window.location.href = '/';
       } else {
