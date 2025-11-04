@@ -15,9 +15,50 @@ env:
   IMAGE_PREFIX: store-management
 
 jobs:
+  run-agent:
+    name: Run Agent and Commit Changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Execute agent (if available)
+        run: |
+          if [ -f scripts/agent.sh ]; then
+            echo "Running scripts/agent.sh"
+            bash scripts/agent.sh || true
+          elif [ -f package.json ]; then
+            echo "Trying \"npm run agent\""
+            npm ci || true
+            npm run agent || true
+          else
+            echo "No agent entrypoint found, skipping execution"
+          fi
+
+      - name: Stage and commit agent changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage all changes if there are any
+          if ! git diff --quiet; then
+            git add -A
+          else
+            echo "No changes detected in working tree"
+          fi
+
+          # Commit only if there are staged changes
+          if ! git diff --cached --quiet; then
+            COMMIT_MSG="chore(agent): apply agent updates (run ${GITHUB_RUN_ID})"
+            git commit -m "$COMMIT_MSG"
+            echo "Committed with message: $COMMIT_MSG"
+          else
+            echo "No staged changes to commit"
+          fi
   lint-and-test:
     name: Lint & Test
     runs-on: ubuntu-latest
+    needs: run-agent
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,8 +66,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
 
       - name: Install dependencies
         run: |
@@ -108,15 +148,15 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ github.sha }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
       - name: Trivy scan summary
         if: always()
@@ -136,7 +176,7 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v3
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Package Helm charts
         run: |
@@ -209,4 +249,3 @@ jobs:
           echo "### Security Scan" >> $GITHUB_STEP_SUMMARY
           echo "- Trivy scan completed for all services" >> $GITHUB_STEP_SUMMARY
           echo "- Results uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
-
