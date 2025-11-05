@@ -4,6 +4,7 @@ import {
   ID,
   registerEnumType,
   Float,
+  Directive,
 } from '@nestjs/graphql';
 
 export enum PurchaseOrderStatus {
@@ -18,6 +19,7 @@ registerEnumType(PurchaseOrderStatus, {
 });
 
 @ObjectType({ description: '발주' })
+@Directive('@key(fields: "id")')
 export class PurchaseOrder {
   @Field(() => ID)
   id!: string;

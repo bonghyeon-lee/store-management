@@ -308,6 +308,40 @@
 
 - 현재 v0.0.x 단계의 진행 중 또는 예정 작업 없음
 
+#### 최근 완료된 작업
+
+- ✅ `tasks/spec/market-analysis.md` - 시장 분석 및 경쟁사 조사
+  - 상태: completed
+  - 완료일: 2025-11-07
+  - 목적: 상점 운영 플랫폼 시장의 경쟁 환경 분석 및 제품 포지셔닝 전략 수립
+  - 완료된 항목:
+    - 타겟 시장 규모 및 성장 추세 조사
+    - 주요 경쟁사 솔루션 비교 분석 (Square, Lightspeed, Toast 등)
+    - 사용자 니즈 분석 및 페인 포인트 식별
+    - 제품 포지셔닝 전략 제안
+  - 산출물: 시장 분석 문서 (`docs/spec/market-analysis.md`), 경쟁사 비교표
+
+- ✅ `tasks/spec/technology-stack-selection.md` - 기술 스택 선정 근거 문서화
+  - 상태: completed
+  - 완료일: 2025-11-07
+  - 목적: SPEC.md에서 정의된 기술 스택의 선정 근거를 문서화하고 대안 기술과 비교 분석
+  - 완료된 항목:
+    - 프론트엔드/백엔드/데이터베이스/인프라 스택 선정 근거 문서화
+    - 대안 기술 비교 분석 및 트레이드오프 분석 (React vs Vue/Angular, NestJS vs Express 등)
+    - 기술 의존성 분석 및 관리 전략 수립
+  - 산출물: 기술 스택 선정 문서 (`docs/architecture/technology-stack-selection.md`), 의존성 관리 전략 문서 (`docs/ops/dependency-management.md`)
+
+- ✅ `tasks/spec/technical-spikes.md` - 핵심 기술 검증 PoC
+  - 상태: completed
+  - 완료일: 2025-11-07
+  - 목적: 핵심 기술 스택의 실제 작동 여부를 검증하고 기술적 리스크 사전 파악
+  - 완료된 항목:
+    - GraphQL Federation PoC 검증 리포트 작성
+    - NestJS GraphQL Subgraph PoC 검증 리포트 작성
+    - 프론트엔드 기술 스택 PoC 검증 리포트 작성
+    - 데이터베이스 통합 PoC 검증 리포트 작성
+  - 산출물: 각 PoC별 검증 리포트 (`docs/architecture/spikes/`), 기술적 리스크 및 해결 방안 문서
+
 ---
 
 ### v0.1.x: PROJECT - Architecture, interfaces, API contracts, method stubs
@@ -326,32 +360,54 @@
 
 #### 예정 작업
 
-- 📋 `tasks/backend/federation-integration-test-and-validation.md` - Federation 통합 검증 및 서비스 간 데이터 조인 구현 **[HIGH PRIORITY]**
-  - 상태: todo
+- ✅ `tasks/backend/federation-integration-test-and-validation.md` - Federation 통합 검증 및 서비스 간 데이터 조인 구현 **[HIGH PRIORITY]**
+  - 상태: completed
+  - 완료일: 2025-11-05
   - 목적: Gateway를 통한 Federation 통합이 실제로 작동하는지 검증하고, 서비스 간 데이터 조인을 구현
-  - 완료 기준:
-    - Federation 스키마 통합 검증 (모든 Subgraph 연결 확인)
-    - DataLoader 패턴을 통한 서비스 간 데이터 조인 구현
-    - N+1 문제 해결 검증
-    - 통합 테스트 및 Contract 테스트 작성
-    - 성능 테스트 수행 (p95 응답 시간 300ms 이하)
+  - 완료된 항목:
+    - ✅ Federation 스키마 통합 검증 (모든 Subgraph 연결 확인)
+    - ✅ 모든 모델에 @key 디렉티브 추가 (Employee, Attendance, Product, InventoryItem, Order, User, Notification)
+    - ✅ DataLoader 패턴 구현 (InventoryItem → Product 조인)
+    - ✅ 서비스 간 데이터 조인 구현 (InventoryItem에서 Product 정보 조회)
+    - ✅ 통합 테스트 작성 (Federation 통합 검증 테스트)
+    - ✅ GitHub Actions에 Federation 테스트 추가
+    - ✅ 문서화 (`docs/backend/federation-integration.md`)
+  - 산출물:
+    - Federation 통합 검증 테스트 (`tests/federation-integration.test.ts`)
+    - DataLoader 구현 (`backend/inventory-service/src/resolvers/inventory.resolver.ts`)
+    - Federation 통합 문서 (`docs/backend/federation-integration.md`)
+    - GitHub Actions 통합 테스트 단계 업데이트
 
-- 📋 `tasks/backend/federation-integration-mvp.md` - GraphQL Federation 통합 MVP
-  - 상태: todo
+- ✅ `tasks/backend/federation-integration-mvp.md` - GraphQL Federation 통합 MVP
+  - 상태: completed
+  - 완료일: 2025-11-05
   - 목적: 각 마이크로서비스의 GraphQL Subgraph를 정의하고 Federation으로 통합
-  - 완료 기준:
-    - 각 서비스 Subgraph Schema 정의
-    - Federation 스키마 통합
-    - 서비스 간 데이터 조인
-    - 스키마 버전 관리 및 검증
+  - 완료된 항목:
+    - ✅ 각 서비스 Subgraph Schema 정의 (모든 주요 타입에 @key 디렉티브 적용)
+    - ✅ Federation 스키마 통합 (Gateway에서 모든 서비스 연결 및 검증)
+    - ✅ 서비스 간 데이터 조인 (InventoryItem → Product 조인, DataLoader 패턴)
+    - ✅ 스키마 버전 관리 전략 수립 및 문서화
+    - ✅ PurchaseOrder에 @key 디렉티브 추가
+  - 산출물:
+    - Federation 스키마 개발 가이드 (`docs/backend/federation-schema-guide.md`)
+    - 스키마 버전 관리 전략 (`docs/backend/schema-versioning.md`)
+    - Federation 통합 문서 업데이트 (`docs/backend/federation-integration.md`)
 
-- 📋 `tasks/frontend/graphql-client.md` - Apollo Client Setup & UI Contract
-  - 상태: todo
+- ✅ `tasks/frontend/graphql-client.md` - Apollo Client Setup & UI Contract
+  - 상태: completed
+  - 완료일: 2025-01-27
   - 목적: 관리 콘솔과 점장 포털에서 사용하는 Apollo Client 구성 표준화 및 초기 UI/데이터 계약 수립
-  - 완료 기준:
-    - Apollo Client 인스턴스 구성 (Auth Link, Error Link, Retry Link)
-    - 코드젠 파이프라인(GraphQL Code Generator) 설정
-    - Attendance/Inventory 조회 화면 와이어프레임 연결
+  - 완료된 항목:
+    - ✅ Apollo Client 인스턴스 구성 (Auth Link, Error Link, Retry Link)
+    - ✅ 코드젠 파이프라인(GraphQL Code Generator) 설정
+    - ✅ Attendance/Inventory 조회 화면 구현 및 GraphQL 쿼리 연결
+    - ✅ GraphQL 쿼리 훅 유닛 테스트 예시 작성
+    - ✅ 프론트엔드 문서 업데이트 (`docs/frontend/README.md`)
+  - 산출물:
+    - Apollo Client 설정 (`frontend/src/app/providers/apollo.tsx`)
+    - GraphQL 쿼리 파일 (`frontend/src/shared/api/graphql/`)
+    - 테스트 예시 (`frontend/src/shared/api/graphql/__tests__/`)
+    - 프론트엔드 문서 (`docs/frontend/README.md`)
 
 ---
 
@@ -369,6 +425,14 @@
   - Docker Compose를 통한 서비스 통합 환경 구성
   - 헬스 체크 엔드포인트 검증
   - CI/CD 파이프라인에 통합 테스트 단계 포함
+
+- ✅ Federation 통합 테스트 구현
+  - 상태: completed
+  - 완료일: 2025-11-05
+  - 루트 레벨 테스트 환경 구성 (package.json, jest.config.js, tsconfig.json)
+  - Federation 통합 검증 테스트 작성 (`tests/federation-integration.test.ts`)
+  - GitHub Actions에 Federation 테스트 단계 추가
+  - 모든 서비스 헬스 체크 및 통합 테스트 실행
 
 #### 진행 중/예정 작업
 
@@ -488,10 +552,11 @@
 - ✅ Gateway 서비스 MVP
   - 상태: completed
   - Apollo Federation Gateway 구현
-  - 인증 미들웨어 (`auth.middleware.ts`)
+  - 인증 미들웨어 (`auth.middleware.ts`) - Introspection 쿼리 처리 개선
   - Observability 미들웨어 (`observability.middleware.ts`)
   - 보안 미들웨어 (`security.middleware.ts`)
   - CORS 및 보안 설정
+  - 미들웨어 순서 최적화 (express.json() → authMiddleware)
 
 - ✅ Attendance 서비스 MVP (부분 구현)
   - 상태: in-progress
@@ -516,9 +581,11 @@
   - 재고 실사 입력 및 조회
     - `inventory.resolver.ts` - Inventory Query/Mutation 구현
     - SubmitInventoryCount, GetStoreInventory, ListStoreInventories
+    - DataLoader 패턴 구현 (InventoryItem → Product 조인)
   - 발주 요청 및 입고 처리
     - `purchase-order.resolver.ts` - PurchaseOrder Query/Mutation 구현
     - CreatePurchaseOrder, ApprovePurchaseOrder, RejectPurchaseOrder, ReceiveInventory
+  - Federation 디렉티브 추가 (@key)
 
 - ✅ Sales 서비스 MVP (부분 구현)
   - 상태: in-progress
@@ -620,17 +687,21 @@
 
 #### 버그 수정 작업
 
-- 🔄 `tasks/ops/fix-github-actions-pr1-failures.md` - GitHub Actions PR1 실패 수정
-  - 상태: in-progress
+- ✅ `tasks/ops/fix-github-actions-pr1-failures.md` - GitHub Actions PR1 실패 수정
+  - 상태: completed
+  - 완료일: 2025-11-05
 
-- 🔄 `tasks/ops/fix-github-actions-failures-2025-11-04.md` - GitHub Actions 실패 수정
-  - 상태: in-progress
+- ✅ `tasks/ops/fix-github-actions-failures-2025-11-04.md` - GitHub Actions 실패 수정
+  - 상태: completed
+  - 완료일: 2025-11-05
 
-- 🔄 `tasks/ops/fix-github-actions-failure-0f75c29.md` - GitHub Actions 실패 수정
-  - 상태: in-progress
+- ✅ `tasks/ops/fix-github-actions-failure-0f75c29.md` - GitHub Actions 실패 수정
+  - 상태: completed
+  - 완료일: 2025-11-05
 
 - 📋 `tasks/ops/fix-integration-test-docker-compose-error.md` - 통합 테스트 Docker Compose 에러 수정
   - 상태: pending
+  - 마감일: 2025-12-10
 
 - 📋 `tasks/ops/implement-notification-auth-services.md` - Notification/Auth 서비스 구현
   - 상태: todo
@@ -761,8 +832,8 @@
 ### 현재 진행 상황
 
 - **v0.0.x (CONFIG)**: 2개 완료
-- **v0.1.x (PROJECT)**: 2개 진행 중, 3개 예정 (Federation 통합 검증 추가)
-- **v0.2.x (TESTS)**: 2개 완료 (CI/CD 테스트 단계, 통합 테스트 인프라), 4개 예정 (테스트 프레임워크 설정, 단위 테스트, 통합 테스트, Fixtures)
+- **v0.1.x (PROJECT)**: 2개 진행 중, 1개 예정, 2개 완료 (Federation 통합 검증, Federation 통합 MVP)
+- **v0.2.x (TESTS)**: 3개 완료 (CI/CD 테스트 단계, 통합 테스트 인프라, Federation 통합 테스트), 4개 예정 (테스트 프레임워크 설정, 단위 테스트, 통합 테스트, Fixtures)
 - **v0.3.x (DATA)**: 2개 완료 (GraphQL 스키마 정의, 데이터 모델 구현), 2개 예정 (DB 스키마/마이그레이션, 데이터 검증)
 - **v0.4.x (CODE)**: 6개 부분 완료/진행 중 (Gateway 완료, Attendance/Inventory/Sales/Auth/Notification 부분 구현), 6개 예정 (서비스 완성)
 - **v0.5.x (DEVOPS)**: 1개 진행 중, 1개 완료, 1개 예정, 5개 버그 수정

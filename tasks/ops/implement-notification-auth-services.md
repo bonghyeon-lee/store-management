@@ -3,7 +3,7 @@ title: "[Ops] Notification & Auth 서비스 구현 (GitHub Actions 선행 작업
 owner: backend-team
 status: todo
 priority: high
-due: 2025-11-10
+due: 2025-12-05
 related_tasks:
   - ./fix-github-actions-failure-0f75c29.md
   - ../backend/notification-service-mvp.md

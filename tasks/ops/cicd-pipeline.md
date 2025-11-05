@@ -3,7 +3,7 @@ title: "[Ops] CI/CD Pipeline Bootstrap"
 owner: devops-agent
 status: todo
 priority: medium
-due: 2025-11-05
+due: 2025-12-12
 related_prompts:
   - ../../prompts/ops-incident-review.md
   - ../../prompts/release-pipeline-design.md

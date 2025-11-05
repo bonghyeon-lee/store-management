@@ -3,7 +3,7 @@ title: "[Frontend] 직원 모바일 앱/PWA MVP 구현"
 owner: frontend-team
 status: todo
 priority: high
-due: 2025-11-05
+due: 2025-12-20
 related_prompts:
   - ../prompts/frontend-wireframes.md
 ---

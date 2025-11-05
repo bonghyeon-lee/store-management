@@ -1,9 +1,10 @@
 ---
 title: "[Ops] GitHub Actions PR #1 실패 원인 분석 및 수정"
 owner: devops-agent
-status: in-progress
+status: completed
 priority: high
 due: 2025-11-06
+completed: 2025-11-05
 related_tasks:
   - ./fix-github-actions-failures-2025-11-04.md
   - ./fix-github-actions-failure-0f75c29.md

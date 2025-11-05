@@ -3,7 +3,7 @@ title: "[Backend] Generate Subgraph Services from Federation Schemas"
 owner: backend-service
 status: in-progress
 priority: high
-due: 2025-11-10
+due: 2025-11-14
 related_tasks:
   - ./federation-schema.md
 ---

@@ -3,7 +3,7 @@ title: "[Ops] 인프라 MVP 설정"
 owner: ops-team
 status: in-progress
 priority: high
-due: 2025-11-05
+due: 2025-12-10
 related_prompts:
   - ../prompts/release-pipeline-design.md
 ---

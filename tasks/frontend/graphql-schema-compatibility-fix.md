@@ -3,7 +3,7 @@ title: "[Frontend] GraphQL 스키마 호환성 수정 작업"
 owner: frontend-team
 status: todo
 priority: high
-due: 2025-11-11
+due: 2025-12-15
 related_prompts:
   - ../prompts/graphql-contract-review.md
 ---

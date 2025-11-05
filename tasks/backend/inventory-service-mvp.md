@@ -3,7 +3,7 @@ title: "[Backend] 재고 서비스 MVP 기능 구현"
 owner: backend-team
 status: todo
 priority: high
-due: 2025-11-05
+due: 2025-12-05
 related_prompts:
   - ../prompts/backend-service-brief.md
 ---

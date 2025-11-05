@@ -3,7 +3,7 @@ title: "[Ops] Integration Test 단계 docker-compose 명령어 오류 수정"
 owner: devops-agent
 status: pending
 priority: high
-due: 2025-11-05
+due: 2025-12-10
 related_tasks:
   - ./fix-github-actions-failures-2025-11-04.md
   - ./cicd-pipeline.md
