@@ -90,6 +90,39 @@ export class AttendanceResolver {
 
   @Mutation(() => Attendance, { description: '출근 기록' })
   checkIn(@Args('input') input: CheckInInput): Attendance {
+    // 입력 값 검증
+    if (!input.storeId || input.storeId.trim().length === 0) {
+      throw new Error('지점 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!input.employeeId || input.employeeId.trim().length === 0) {
+      throw new Error('직원 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!input.date || input.date.trim().length === 0) {
+      throw new Error('날짜는 필수 입력 항목입니다.');
+    }
+
+    if (!input.checkInAt || input.checkInAt.trim().length === 0) {
+      throw new Error('출근 시간은 필수 입력 항목입니다.');
+    }
+
+    // 날짜 형식 검증 (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(input.date)) {
+      throw new Error('날짜 형식이 올바르지 않습니다. (YYYY-MM-DD 형식 필요)');
+    }
+
+    // 출근 시간 형식 검증 (ISO-8601)
+    try {
+      const checkInDate = new Date(input.checkInAt);
+      if (isNaN(checkInDate.getTime())) {
+        throw new Error('출근 시간 형식이 올바르지 않습니다.');
+      }
+    } catch {
+      throw new Error('출근 시간 형식이 올바르지 않습니다.');
+    }
+
     const key = getAttendanceKey(input.storeId, input.employeeId, input.date);
 
     const existing = attendanceRecords.get(key);
@@ -122,11 +155,53 @@ export class AttendanceResolver {
 
   @Mutation(() => Attendance, { description: '퇴근 기록' })
   checkOut(@Args('input') input: CheckOutInput): Attendance {
+    // 입력 값 검증
+    if (!input.storeId || input.storeId.trim().length === 0) {
+      throw new Error('지점 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!input.employeeId || input.employeeId.trim().length === 0) {
+      throw new Error('직원 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!input.date || input.date.trim().length === 0) {
+      throw new Error('날짜는 필수 입력 항목입니다.');
+    }
+
+    if (!input.checkOutAt || input.checkOutAt.trim().length === 0) {
+      throw new Error('퇴근 시간은 필수 입력 항목입니다.');
+    }
+
+    // 날짜 형식 검증 (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(input.date)) {
+      throw new Error('날짜 형식이 올바르지 않습니다. (YYYY-MM-DD 형식 필요)');
+    }
+
+    // 퇴근 시간 형식 검증 (ISO-8601)
+    try {
+      const checkOutDate = new Date(input.checkOutAt);
+      if (isNaN(checkOutDate.getTime())) {
+        throw new Error('퇴근 시간 형식이 올바르지 않습니다.');
+      }
+    } catch {
+      throw new Error('퇴근 시간 형식이 올바르지 않습니다.');
+    }
+
     const key = getAttendanceKey(input.storeId, input.employeeId, input.date);
 
     const existing = attendanceRecords.get(key);
     if (!existing) {
       throw new Error('출근 기록을 먼저 입력해주세요.');
+    }
+
+    // 출근 시간보다 퇴근 시간이 빠른지 확인
+    if (existing.checkInAt) {
+      const checkInTime = new Date(existing.checkInAt);
+      const checkOutTime = new Date(input.checkOutAt);
+      if (checkOutTime <= checkInTime) {
+        throw new Error('퇴근 시간은 출근 시간보다 늦어야 합니다.');
+      }
     }
 
     existing.checkOutAt = input.checkOutAt;
@@ -146,11 +221,29 @@ export class AttendanceResolver {
     @Args('date') date: string,
     @Args('notes', { nullable: true }) notes?: string
   ): Attendance {
+    // 입력 값 검증
+    if (!storeId || storeId.trim().length === 0) {
+      throw new Error('지점 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!employeeId || employeeId.trim().length === 0) {
+      throw new Error('직원 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!date || date.trim().length === 0) {
+      throw new Error('날짜는 필수 입력 항목입니다.');
+    }
+
     const key = getAttendanceKey(storeId, employeeId, date);
     const attendance = attendanceRecords.get(key);
 
     if (!attendance) {
       throw new Error('출퇴근 기록을 찾을 수 없습니다.');
+    }
+
+    // 이미 승인된 경우
+    if (attendance.status === AttendanceStatus.APPROVED) {
+      throw new Error('이미 승인된 근태 기록입니다.');
     }
 
     attendance.status = AttendanceStatus.APPROVED;
@@ -169,6 +262,23 @@ export class AttendanceResolver {
     @Args('date') date: string,
     @Args('notes') notes: string
   ): Attendance {
+    // 입력 값 검증
+    if (!storeId || storeId.trim().length === 0) {
+      throw new Error('지점 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!employeeId || employeeId.trim().length === 0) {
+      throw new Error('직원 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!date || date.trim().length === 0) {
+      throw new Error('날짜는 필수 입력 항목입니다.');
+    }
+
+    if (!notes || notes.trim().length === 0) {
+      throw new Error('거부 사유는 필수 입력 항목입니다.');
+    }
+
     const key = getAttendanceKey(storeId, employeeId, date);
     const attendance = attendanceRecords.get(key);
 
@@ -177,7 +287,7 @@ export class AttendanceResolver {
     }
 
     attendance.status = AttendanceStatus.REJECTED;
-    attendance.notes = notes;
+    attendance.notes = notes.trim();
 
     attendanceRecords.set(key, attendance);
     return attendance;
@@ -190,6 +300,23 @@ export class AttendanceResolver {
     @Args('date') date: string,
     @Args('notes') notes: string
   ): Attendance {
+    // 입력 값 검증
+    if (!storeId || storeId.trim().length === 0) {
+      throw new Error('지점 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!employeeId || employeeId.trim().length === 0) {
+      throw new Error('직원 ID는 필수 입력 항목입니다.');
+    }
+
+    if (!date || date.trim().length === 0) {
+      throw new Error('날짜는 필수 입력 항목입니다.');
+    }
+
+    if (!notes || notes.trim().length === 0) {
+      throw new Error('수정 요청 사유는 필수 입력 항목입니다.');
+    }
+
     const key = getAttendanceKey(storeId, employeeId, date);
     const attendance = attendanceRecords.get(key);
 
@@ -198,7 +325,7 @@ export class AttendanceResolver {
     }
 
     attendance.status = AttendanceStatus.PENDING;
-    attendance.notes = notes;
+    attendance.notes = notes.trim();
 
     attendanceRecords.set(key, attendance);
     return attendance;

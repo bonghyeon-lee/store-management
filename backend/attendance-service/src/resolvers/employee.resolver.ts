@@ -6,7 +6,7 @@ import {
 } from '../models/inputs.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
-const employees: Map<string, Employee> = new Map();
+export const employees: Map<string, Employee> = new Map();
 
 // 초기 샘플 데이터
 const initializeSampleData = () => {
@@ -69,15 +69,44 @@ export class EmployeeResolver {
 
   @Mutation(() => Employee, { description: '직원 생성' })
   createEmployee(@Args('input') input: CreateEmployeeInput): Employee {
+    // 입력 값 검증
+    if (!input.name || input.name.trim().length === 0) {
+      throw new Error('이름은 필수 입력 항목입니다.');
+    }
+
+    if (!input.role || input.role.trim().length === 0) {
+      throw new Error('역할은 필수 입력 항목입니다.');
+    }
+
+    if (!input.assignedStoreIds || input.assignedStoreIds.length === 0) {
+      throw new Error('할당된 지점 ID는 최소 1개 이상 필요합니다.');
+    }
+
+    // 이메일 형식 검증
+    if (input.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(input.email)) {
+        throw new Error('올바른 이메일 형식이 아닙니다.');
+      }
+    }
+
+    // 전화번호 형식 검증 (선택적)
+    if (input.phone) {
+      const phoneRegex = /^[0-9-]+$/;
+      if (!phoneRegex.test(input.phone)) {
+        throw new Error('올바른 전화번호 형식이 아닙니다.');
+      }
+    }
+
     const id = `EMP-${String(employees.size + 1).padStart(3, '0')}`;
     const now = new Date().toISOString();
 
     const employee: Employee = {
       id,
-      name: input.name,
-      email: input.email,
-      phone: input.phone,
-      role: input.role,
+      name: input.name.trim(),
+      email: input.email?.trim(),
+      phone: input.phone?.trim(),
+      role: input.role.trim(),
       employmentStatus: EmploymentStatus.ACTIVE,
       assignedStoreIds: input.assignedStoreIds,
       createdAt: now,
@@ -98,12 +127,48 @@ export class EmployeeResolver {
       throw new Error(`직원을 찾을 수 없습니다: ${id}`);
     }
 
+    // 입력 값 검증
+    if (input.name !== undefined && input.name.trim().length === 0) {
+      throw new Error('이름은 비어있을 수 없습니다.');
+    }
+
+    if (input.role !== undefined && input.role.trim().length === 0) {
+      throw new Error('역할은 비어있을 수 없습니다.');
+    }
+
+    if (
+      input.assignedStoreIds !== undefined &&
+      input.assignedStoreIds.length === 0
+    ) {
+      throw new Error('할당된 지점 ID는 최소 1개 이상 필요합니다.');
+    }
+
+    // 이메일 형식 검증
+    if (input.email !== undefined && input.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(input.email)) {
+        throw new Error('올바른 이메일 형식이 아닙니다.');
+      }
+    }
+
+    // 전화번호 형식 검증
+    if (input.phone !== undefined && input.phone) {
+      const phoneRegex = /^[0-9-]+$/;
+      if (!phoneRegex.test(input.phone)) {
+        throw new Error('올바른 전화번호 형식이 아닙니다.');
+      }
+    }
+
     const updated: Employee = {
       ...employee,
-      ...(input.name && { name: input.name }),
-      ...(input.email !== undefined && { email: input.email }),
-      ...(input.phone !== undefined && { phone: input.phone }),
-      ...(input.role && { role: input.role }),
+      ...(input.name && { name: input.name.trim() }),
+      ...(input.email !== undefined && {
+        email: input.email ? input.email.trim() : undefined,
+      }),
+      ...(input.phone !== undefined && {
+        phone: input.phone ? input.phone.trim() : undefined,
+      }),
+      ...(input.role && { role: input.role.trim() }),
       ...(input.employmentStatus && {
         employmentStatus: input.employmentStatus,
       }),
