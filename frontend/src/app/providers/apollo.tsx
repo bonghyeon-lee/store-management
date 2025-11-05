@@ -36,7 +36,7 @@ const retryLink = new RetryLink({
   },
   attempts: {
     max: 3,
-    retryIf: (error, _operation) => {
+    retryIf: (error) => {
       // 네트워크 에러 또는 5xx 서버 에러만 재시도
       if (error) {
         const networkError = error.networkError;
@@ -57,7 +57,7 @@ const retryLink = new RetryLink({
 });
 
 // 에러 처리 (401 에러 시 토큰 제거)
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, extensions }) => {
       console.error('GraphQL Error:', message, extensions);
@@ -99,7 +99,8 @@ export const apolloClient = new ApolloClient({
         fields: {
           // 예: employees 쿼리 캐시 정책
           employees: {
-            merge(existing = [], incoming) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            merge(_existing = [], incoming) {
               return incoming;
             },
           },

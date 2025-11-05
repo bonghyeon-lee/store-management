@@ -1,6 +1,5 @@
 import { gql, useMutation } from '@apollo/client';
 import { Button } from '@shared/ui/Button';
-import { Loading } from '@shared/ui/Loading';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 import React, { useState } from 'react';
 
@@ -81,7 +80,15 @@ export const PurchaseOrderFormPage: React.FC = () => {
         <h1 style={{ marginBottom: 20 }}>발주 생성</h1>
 
         {error && (
-          <div style={{ padding: 12, marginBottom: 20, background: '#f8d7da', color: '#721c24', borderRadius: 6 }}>
+          <div
+            style={{
+              padding: 12,
+              marginBottom: 20,
+              background: '#f8d7da',
+              color: '#721c24',
+              borderRadius: 6,
+            }}
+          >
             오류: {error.message}
           </div>
         )}
@@ -189,4 +196,3 @@ export const PurchaseOrderFormPage: React.FC = () => {
     </ProtectedRoute>
   );
 };
-
