@@ -294,12 +294,19 @@
   - 근태/재고/매출 서비스에 대한 MVP 스코프 도출
   - GraphQL Federation 아키텍처 다이어그램 검토 및 피드백 반영
 
+- ✅ `tasks/analytics/kpi-definition.md` - KPI Framework 정의
+  - 상태: completed
+  - 완료일: 2025-11-07
+  - 목적: 근태, 재고, 매출 영역의 핵심 KPI 정의 및 데이터 파이프라인 설계 기준 마련
+  - 산출물:
+    - KPI 정의 문서 (`docs/analytics/kpi-matrix.md`)
+    - 대시보드 와이어프레임 (`docs/analytics/dashboard-wireframes.md`)
+    - 데이터 품질 검증 체크리스트 (`docs/analytics/data-quality-checklist.md`)
+    - Analytics Handbook 업데이트 (`docs/analytics/README.md`)
+
 #### 진행 중/예정 작업
 
-- 🔄 `tasks/analytics/kpi-definition.md` - KPI Framework 정의
-  - 상태: todo
-  - 목적: 근태, 재고, 매출 영역의 핵심 KPI 정의 및 데이터 파이프라인 설계 기준 마련
-  - 산출물: KPI 정의 문서, 대시보드 와이어프레임, 데이터 품질 검증 체크리스트
+- 현재 v0.0.x 단계의 진행 중 또는 예정 작업 없음
 
 ---
 
@@ -584,7 +591,7 @@
 
 ### 현재 진행 상황
 
-- **v0.0.x (CONFIG)**: 1개 완료, 1개 진행 중
+- **v0.0.x (CONFIG)**: 2개 완료
 - **v0.1.x (PROJECT)**: 2개 진행 중, 2개 예정
 - **v0.2.x (TESTS)**: 각 태스크에 포함
 - **v0.3.x (DATA)**: 각 태스크에 포함
