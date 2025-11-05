@@ -138,13 +138,12 @@ async function bootstrap() {
   // GraphQL Introspection 제어
   app.use(introspectionControlMiddleware);
 
-  // JWT 인증 미들웨어
-  app.use(authMiddleware);
-
   // GraphQL 엔드포인트
+  // express.json()을 먼저 적용하여 req.body를 파싱한 후, authMiddleware가 query를 확인할 수 있도록 함
   app.use(
     '/graphql',
     express.json(),
+    authMiddleware,
     expressMiddleware(server, {
       context: async ({
         req,

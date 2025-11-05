@@ -1,4 +1,10 @@
-import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
+import {
+  ObjectType,
+  Field,
+  ID,
+  registerEnumType,
+  Directive,
+} from '@nestjs/graphql';
 
 export enum AttendanceStatus {
   PENDING = 'PENDING',
@@ -11,6 +17,7 @@ registerEnumType(AttendanceStatus, {
 });
 
 @ObjectType({ description: '출퇴근 기록' })
+@Directive('@key(fields: "storeId employeeId date")')
 export class Attendance {
   @Field(() => ID)
   storeId!: string;

@@ -1,4 +1,14 @@
-import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
+import {
+  Query,
+  Resolver,
+  Args,
+  Mutation,
+  ID,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
+// @ts-ignore - dataloader는 CommonJS 모듈이지만 esModuleInterop으로 처리됨
+import DataLoader from 'dataloader';
 import {
   InventoryItem,
   InventoryAudit,
@@ -8,17 +18,66 @@ import {
   SubmitInventoryCountInput,
   SetReorderPointInput,
 } from '../models/inputs.model';
+import { Product } from '../models/product.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
 const inventoryItems: Map<string, InventoryItem> = new Map();
 const inventoryAudits: InventoryAudit[] = [];
 
+// Product 데이터 (product.resolver.ts와 공유)
+// 실제로는 별도 서비스나 모듈에서 가져와야 하지만, MVP 단계에서는 인메모리 사용
+const products: Map<string, Product> = new Map();
+
 // 키 생성 함수
 const getInventoryKey = (storeId: string, sku: string) => `${storeId}:${sku}`;
+
+// Product DataLoader 생성 함수
+const createProductLoader = (): DataLoader<string, Product | null> => {
+  return new DataLoader<string, Product | null>(
+    async (productIds: readonly string[]) => {
+      // 배치로 Product 조회
+      return productIds.map((id) => products.get(id) || null);
+    }
+  );
+};
 
 // 초기 샘플 데이터
 const initializeSampleData = () => {
   const now = new Date().toISOString();
+
+  // Product 데이터 초기화 (product.resolver.ts와 동일한 데이터)
+  products.set('SKU-001', {
+    id: 'SKU-001',
+    name: '샘플 상품 1',
+    description: '테스트용 상품 1',
+    unitPrice: 10000,
+    category: '일반',
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+  products.set('SKU-002', {
+    id: 'SKU-002',
+    name: '샘플 상품 2',
+    description: '테스트용 상품 2',
+    unitPrice: 25000,
+    category: '일반',
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+  products.set('SKU-003', {
+    id: 'SKU-003',
+    name: '샘플 상품 3',
+    description: '테스트용 상품 3',
+    unitPrice: 39900,
+    category: '특가',
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // InventoryItem 데이터 초기화
   inventoryItems.set('STORE-001:SKU-001', {
     storeId: 'STORE-001',
     sku: 'SKU-001',
@@ -43,6 +102,24 @@ initializeSampleData();
 
 @Resolver(() => InventoryItem)
 export class InventoryResolver {
+  private productLoader: DataLoader<string, Product | null>;
+
+  constructor() {
+    // DataLoader 초기화 (실제로는 컨텍스트에서 가져와야 함)
+    this.productLoader = createProductLoader();
+  }
+
+  // Product 조회를 위한 ResolveField (Federation 확장)
+  @ResolveField(() => Product, { nullable: true })
+  async product(
+    @Parent() inventoryItem: InventoryItem
+  ): Promise<Product | null> {
+    if (!inventoryItem.sku) {
+      return null;
+    }
+    return this.productLoader.load(inventoryItem.sku);
+  }
+
   @Query(() => InventoryItem, { nullable: true, description: '재고 항목 조회' })
   inventoryItem(
     @Args('storeId', { type: () => ID }) storeId: string,
@@ -68,7 +145,9 @@ export class InventoryResolver {
   }
 
   @Query(() => [InventoryItem], { description: 'SKU별 재고 조회 (모든 지점)' })
-  skuInventories(@Args('sku', { type: () => ID }) sku: string): InventoryItem[] {
+  skuInventories(
+    @Args('sku', { type: () => ID }) sku: string
+  ): InventoryItem[] {
     const items = Array.from(inventoryItems.values());
     return items.filter((item) => item.sku === sku);
   }

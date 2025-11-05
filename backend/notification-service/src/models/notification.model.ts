@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, ID, registerEnumType, Directive } from '@nestjs/graphql';
 
 export enum NotificationStatus {
   PENDING = 'PENDING',
@@ -21,6 +21,7 @@ registerEnumType(NotificationType, {
 });
 
 @ObjectType({ description: '알림' })
+@Directive('@key(fields: "id")')
 export class Notification {
   @Field(() => ID)
   id!: string;
@@ -55,4 +56,3 @@ export class Notification {
   @Field()
   createdAt!: string;
 }
-

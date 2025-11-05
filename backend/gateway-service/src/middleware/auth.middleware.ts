@@ -34,18 +34,21 @@ export function authMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
-  // GraphQL Introspection 쿼리는 인증 없이 허용
-  if (
-    req.body?.query?.includes('__schema') ||
-    req.body?.query?.includes('IntrospectionQuery')
-  ) {
+  // 헬스 체크는 인증 없이 허용
+  const path = req.path;
+  if (path === '/health' || path === '/healthz') {
     next();
     return;
   }
 
-  // 헬스 체크는 인증 없이 허용
-  const path = req.path;
-  if (path === '/health' || path === '/healthz') {
+  // GraphQL Introspection 쿼리는 인증 없이 허용
+  // req.body가 파싱되지 않았을 수도 있으므로 안전하게 확인
+  const queryString = req.body?.query || '';
+  if (
+    queryString.includes('__schema') ||
+    queryString.includes('__type') ||
+    queryString.includes('IntrospectionQuery')
+  ) {
     next();
     return;
   }
