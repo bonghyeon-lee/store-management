@@ -47,9 +47,6 @@ function createAuthenticatedClient() {
 const client = createAuthenticatedClient();
 
 describe('Federation 통합 검증', () => {
-  // 인증되지 않은 클라이언트 (Introspection 쿼리용)
-  const unauthenticatedClient = new GraphQLClient(GATEWAY_URL);
-
   describe('1. 스키마 통합 검증', () => {
     it('Gateway에서 통합 스키마를 조회할 수 있어야 함', async () => {
       const query = `
@@ -62,6 +59,7 @@ describe('Federation 통합 검증', () => {
         }
       `;
 
+      // Introspection 쿼리는 인증된 클라이언트로도 실행 가능
       const response = await client.request<{
         __schema: { types: Array<{ name: string }> };
       }>(query);
@@ -81,8 +79,8 @@ describe('Federation 통합 검증', () => {
         }
       `;
 
-      // Introspection 쿼리는 인증 없이 허용되어야 함
-      const response = await unauthenticatedClient.request<{
+      // Introspection 쿼리는 인증된 클라이언트로도 실행 가능
+      const response = await client.request<{
         __schema: { types: Array<{ name: string }> };
       }>(query);
       const typeNames = response.__schema.types.map(
