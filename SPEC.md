@@ -326,6 +326,16 @@
 
 #### 예정 작업
 
+- 📋 `tasks/backend/federation-integration-test-and-validation.md` - Federation 통합 검증 및 서비스 간 데이터 조인 구현 **[HIGH PRIORITY]**
+  - 상태: todo
+  - 목적: Gateway를 통한 Federation 통합이 실제로 작동하는지 검증하고, 서비스 간 데이터 조인을 구현
+  - 완료 기준:
+    - Federation 스키마 통합 검증 (모든 Subgraph 연결 확인)
+    - DataLoader 패턴을 통한 서비스 간 데이터 조인 구현
+    - N+1 문제 해결 검증
+    - 통합 테스트 및 Contract 테스트 작성
+    - 성능 테스트 수행 (p95 응답 시간 300ms 이하)
+
 - 📋 `tasks/backend/federation-integration-mvp.md` - GraphQL Federation 통합 MVP
   - 상태: todo
   - 목적: 각 마이크로서비스의 GraphQL Subgraph를 정의하고 Federation으로 통합
@@ -751,7 +761,7 @@
 ### 현재 진행 상황
 
 - **v0.0.x (CONFIG)**: 2개 완료
-- **v0.1.x (PROJECT)**: 2개 진행 중, 2개 예정
+- **v0.1.x (PROJECT)**: 2개 진행 중, 3개 예정 (Federation 통합 검증 추가)
 - **v0.2.x (TESTS)**: 2개 완료 (CI/CD 테스트 단계, 통합 테스트 인프라), 4개 예정 (테스트 프레임워크 설정, 단위 테스트, 통합 테스트, Fixtures)
 - **v0.3.x (DATA)**: 2개 완료 (GraphQL 스키마 정의, 데이터 모델 구현), 2개 예정 (DB 스키마/마이그레이션, 데이터 검증)
 - **v0.4.x (CODE)**: 6개 부분 완료/진행 중 (Gateway 완료, Attendance/Inventory/Sales/Auth/Notification 부분 구현), 6개 예정 (서비스 완성)
