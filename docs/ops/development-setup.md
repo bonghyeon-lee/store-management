@@ -29,8 +29,16 @@ cp .env.example .env
 
 ### 3. Docker Compose로 서비스 시작
 
+#### 프로덕션 모드 (빌드된 이미지 사용)
+
 ```bash
 docker-compose up -d
+```
+
+#### 개발 모드 (핫 리로드, 코드 변경사항 즉시 반영)
+
+```bash
+docker-compose -f docker-compose.dev.yml up
 ```
 
 모든 서비스가 시작되면 다음 주소에서 접근할 수 있습니다:
@@ -40,6 +48,8 @@ docker-compose up -d
 - Attendance Service: http://localhost:4001/graphql
 - Inventory Service: http://localhost:4002/graphql
 - Sales Service: http://localhost:4003/graphql
+- Notification Service: http://localhost:4004/graphql
+- Auth Service: http://localhost:4005/graphql
 
 ### 4. 서비스 상태 확인
 
@@ -75,26 +85,47 @@ docker-compose stop
 docker-compose down -v
 ```
 
-## 로컬 개발 모드
+## 개발 모드 (핫 리로드)
 
-Docker Compose는 프로덕션 모드로 빌드된 이미지를 사용합니다. 로컬에서 개발하려면:
+### 개발용 Docker Compose 사용
 
-### 백엔드 서비스
+코드 변경사항이 바로 반영되는 개발 모드를 사용하려면 `docker-compose.dev.yml`을 사용합니다:
+
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
+
+이 모드에서는:
+- 백엔드 서비스: 소스 코드 변경 시 자동 재시작 (nodemon)
+- 프론트엔드: Vite HMR로 즉시 반영
+- 모든 서비스가 소스 코드를 볼륨으로 마운트하여 변경사항 감지
+
+### 로컬 개발 모드 (Docker 없이)
+
+Docker Compose는 프로덕션 모드로 빌드된 이미지를 사용합니다. Docker 없이 로컬에서 개발하려면:
+
+#### 백엔드 서비스
 
 각 서비스 디렉토리에서:
 
 ```bash
 cd backend/attendance-service
 npm ci
-npm run start:dev
+npm run dev  # 또는 npm run start:dev
 ```
 
-### 프론트엔드
+#### 프론트엔드
 
 ```bash
 cd frontend
 npm ci
 npm run dev
+```
+
+**참고**: 로컬 개발 시 PostgreSQL과 Redis는 Docker Compose로 실행해야 합니다:
+
+```bash
+docker-compose up postgres redis
 ```
 
 ## 환경 변수

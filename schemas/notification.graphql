@@ -1,0 +1,64 @@
+schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: [
+    "@key",
+    "@requires",
+    "@provides",
+    "@external"
+  ]) {
+  query: Query
+  mutation: Mutation
+}
+
+"알림"
+type Notification @key(fields: "id") {
+  id: ID!
+  storeId: ID
+  employeeId: ID
+  type: NotificationType!
+  recipient: String!
+  subject: String!
+  content: String!
+  status: NotificationStatus!
+  sentAt: String
+  errorMessage: String
+  createdAt: String!
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  SLACK
+}
+
+input SendNotificationInput {
+  storeId: String
+  employeeId: String
+  type: NotificationType!
+  recipient: String!
+  subject: String!
+  content: String!
+}
+
+type Query {
+  "알림 조회"
+  notification(id: ID!): Notification
+  "알림 목록 조회"
+  notifications(
+    storeId: ID
+    employeeId: ID
+    status: NotificationStatus
+    type: NotificationType
+  ): [Notification!]!
+}
+
+type Mutation {
+  "알림 발송"
+  sendNotification(input: SendNotificationInput!): Notification!
+}
+

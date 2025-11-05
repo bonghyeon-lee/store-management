@@ -80,6 +80,78 @@ src/
 - 에러 처리: Global Error Boundary + Apollo Link 에러 핸들링
 - Optimistic UI는 재고 조정, 근태 승인 등 즉시 피드백이 필요한 액션에 적용
 
+## Apollo Client 설정
+
+### 기본 구성
+
+Apollo Client는 `src/app/providers/apollo.tsx`에 설정되어 있습니다:
+
+- **HTTP Link**: GraphQL Gateway 엔드포인트 연결
+  - 기본 URL: `http://localhost:4000/graphql`
+  - 환경 변수: `VITE_GRAPHQL_ENDPOINT`로 설정 가능
+
+- **Auth Link**: JWT 토큰을 자동으로 요청 헤더에 추가
+  - `tokenStorage.getToken()`으로 토큰 조회
+  - 토큰이 없으면 빈 문자열 전송
+
+- **Error Link**: GraphQL 및 네트워크 에러 처리
+  - `UNAUTHENTICATED` 또는 `TOKEN_EXPIRED` 에러 시 자동 로그아웃
+  - 401 네트워크 에러 시 로그인 페이지로 리다이렉트
+
+- **Retry Link**: 네트워크 에러 시 자동 재시도
+  - 최대 3회 재시도
+  - 5xx 서버 에러만 재시도 (4xx 클라이언트 에러는 재시도하지 않음)
+  - 초기 지연 시간: 300ms, 지터(jitter) 적용
+
+### 캐시 정책
+
+- `InMemoryCache` 사용
+- 기본 에러 정책: `errorPolicy: 'all'` (에러가 있어도 캐시된 데이터 반환)
+- 필요 시 `typePolicies`로 필드별 캐시 정책 커스터마이징 가능
+
+### 사용 예시
+
+```typescript
+import { useQuery } from '@apollo/client';
+import { GET_EMPLOYEES } from '@shared/api/graphql/attendance.graphql';
+
+function EmployeeList() {
+  const { data, loading, error } = useQuery(GET_EMPLOYEES);
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  
+  return <div>{/* ... */}</div>;
+}
+```
+
+### 코드젠 설정
+
+GraphQL Code Generator는 `codegen.ts`에 설정되어 있습니다:
+
+```typescript
+// codegen.ts
+import { CodegenConfig } from '@graphql-codegen/cli';
+
+const config: CodegenConfig = {
+  schema: ['../schemas/*.graphql'],
+  documents: ['src/**/*.graphql'],
+  generates: {
+    'src/shared/api/generated/': {
+      preset: 'client',
+      plugins: []
+    }
+  }
+};
+```
+
+코드젠 실행:
+```bash
+npm run codegen
+```
+
+생성된 타입과 훅은 `src/shared/api/generated/` 디렉터리에 위치합니다.
+
 ## ESLint Import Boundaries 예시
 
 FSD 레이어 간 의존 방향을 ESLint로 강제합니다. 예시는 `eslint-plugin-boundaries` 기반입니다.
@@ -183,8 +255,81 @@ import { formatCurrency } from "@shared/lib/format";
 - Playwright/Cypress로 주요 플로우 E2E 테스트
 - Lighthouse CI로 성능/접근성 CI 단계 측정
 
+## 환경 변수
+
+프론트엔드에서 사용하는 환경 변수:
+
+- `VITE_GRAPHQL_ENDPOINT`: GraphQL Gateway 엔드포인트 URL (기본값: `http://localhost:4000/graphql`)
+
+`.env` 파일에 설정:
+```
+VITE_GRAPHQL_ENDPOINT=http://localhost:4000/graphql
+```
+
+## 개발 가이드
+
+### 로컬 개발 환경 설정
+
+1. **의존성 설치**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **개발 서버 실행**
+   ```bash
+   npm run dev
+   ```
+   - 기본 포트: `5173` (Vite)
+   - 핫 리로드 지원
+
+3. **코드젠 실행** (스키마 변경 시)
+   ```bash
+   npm run codegen
+   ```
+
+4. **빌드**
+   ```bash
+   npm run build
+   ```
+
+### GraphQL 쿼리 작성
+
+1. `src/shared/api/graphql/` 디렉터리에 `.graphql` 파일 생성
+2. 쿼리/뮤테이션 작성
+3. `npm run codegen` 실행하여 타입 생성
+4. 컴포넌트에서 생성된 훅 사용
+
+예시:
+```graphql
+# src/shared/api/graphql/attendance.graphql
+query GetEmployees($storeId: ID) {
+  employees(storeId: $storeId) {
+    id
+    name
+    email
+    role
+  }
+}
+```
+
+```typescript
+// 컴포넌트에서 사용
+import { useQuery } from '@apollo/client';
+import { GetEmployeesDocument } from '@shared/api/generated/gql';
+
+function EmployeeList({ storeId }: { storeId: string }) {
+  const { data, loading } = useQuery(GetEmployeesDocument, {
+    variables: { storeId }
+  });
+  
+  // ...
+}
+```
+
 ## 참고
 
 - 요구사항: `../../SPEC.md`
 - 관련 프롬프트: `../../prompts/frontend-wireframes.md` (작성 예정)
 - 태스크 예시: `../../tasks/frontend/graphql-client.md`
+- 백엔드 API 문서: `../backend/README.md`

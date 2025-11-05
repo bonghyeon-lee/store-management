@@ -1,0 +1,350 @@
+version: "3.9"
+
+services:
+  # 데이터베이스
+  postgres:
+    image: postgres:16-alpine
+    container_name: store-management-postgres-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-storeuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-storepass}
+      POSTGRES_DB: ${POSTGRES_DB:-storemanagement}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-storeuser} -d ${POSTGRES_DB:-storemanagement}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - store-management-net
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: store-management-redis-dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - store-management-net
+
+  # 백엔드 서비스들 - 개발 모드
+  attendance-service:
+    build:
+      context: ./backend/attendance-service
+      dockerfile: Dockerfile
+      target: builder
+    container_name: attendance-service-dev
+    command: npm run dev
+    environment:
+      - PORT=4001
+      - NODE_ENV=development
+      - DATABASE_URL=${ATTENDANCE_DATABASE_URL:-postgresql://storeuser:storepass@postgres:5432/storemanagement}
+    volumes:
+      - ./backend/attendance-service/src:/app/src
+      - ./backend/attendance-service/schema.gql:/app/schema.gql
+      - ./backend/attendance-service/tsconfig.json:/app/tsconfig.json
+      - attendance_service_node_modules:/app/node_modules
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  inventory-service:
+    build:
+      context: ./backend/inventory-service
+      dockerfile: Dockerfile
+      target: builder
+    container_name: inventory-service-dev
+    command: npm run dev
+    environment:
+      - PORT=4002
+      - NODE_ENV=development
+      - DATABASE_URL=${INVENTORY_DATABASE_URL:-postgresql://storeuser:storepass@postgres:5432/storemanagement}
+    volumes:
+      - ./backend/inventory-service/src:/app/src
+      - ./backend/inventory-service/schema.gql:/app/schema.gql
+      - ./backend/inventory-service/tsconfig.json:/app/tsconfig.json
+      - inventory_service_node_modules:/app/node_modules
+    ports:
+      - "4002:4002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  sales-service:
+    build:
+      context: ./backend/sales-service
+      dockerfile: Dockerfile
+      target: builder
+    container_name: sales-service-dev
+    command: npm run dev
+    environment:
+      - PORT=4003
+      - NODE_ENV=development
+      - DATABASE_URL=${SALES_DATABASE_URL:-postgresql://storeuser:storepass@postgres:5432/storemanagement}
+    volumes:
+      - ./backend/sales-service/src:/app/src
+      - ./backend/sales-service/schema.gql:/app/schema.gql
+      - ./backend/sales-service/tsconfig.json:/app/tsconfig.json
+      - sales_service_node_modules:/app/node_modules
+    ports:
+      - "4003:4003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4003/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+      target: builder
+    container_name: notification-service-dev
+    command: npm run dev
+    environment:
+      - PORT=4004
+      - NODE_ENV=development
+      - DATABASE_URL=${NOTIFICATION_DATABASE_URL:-postgresql://storeuser:storepass@postgres:5432/storemanagement}
+    volumes:
+      - ./backend/notification-service/src:/app/src
+      - ./backend/notification-service/tsconfig.json:/app/tsconfig.json
+      - notification_service_node_modules:/app/node_modules
+    ports:
+      - "4004:4004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4004/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+      target: builder
+    container_name: auth-service-dev
+    command: npm run dev
+    environment:
+      - PORT=4005
+      - NODE_ENV=development
+      - DATABASE_URL=${AUTH_DATABASE_URL:-postgresql://storeuser:storepass@postgres:5432/storemanagement}
+    volumes:
+      - ./backend/auth-service/src:/app/src
+      - ./backend/auth-service/tsconfig.json:/app/tsconfig.json
+      - auth_service_node_modules:/app/node_modules
+    ports:
+      - "4005:4005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4005/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  gateway-service:
+    build:
+      context: ./backend/gateway-service
+      dockerfile: Dockerfile
+      target: builder
+    container_name: gateway-service-dev
+    command: npm run dev
+    environment:
+      - PORT=4000
+      - NODE_ENV=development
+      - ATTENDANCE_URL=http://attendance-service:4001/graphql
+      - INVENTORY_URL=http://inventory-service:4002/graphql
+      - SALES_URL=http://sales-service:4003/graphql
+      - NOTIFICATION_URL=http://notification-service:4004/graphql
+      - AUTH_URL=http://auth-service:4005/graphql
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
+    volumes:
+      - ./backend/gateway-service/src:/app/src
+      - ./backend/gateway-service/tsconfig.json:/app/tsconfig.json
+      - gateway_service_node_modules:/app/node_modules
+    ports:
+      - "4000:4000"
+    depends_on:
+      attendance-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      sales-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: frontend-dev
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:4000/graphql}
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      - gateway-service
+    restart: unless-stopped
+    networks:
+      - store-management-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5173",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  attendance_service_node_modules:
+    driver: local
+  inventory_service_node_modules:
+    driver: local
+  sales_service_node_modules:
+    driver: local
+  notification_service_node_modules:
+    driver: local
+  auth_service_node_modules:
+    driver: local
+  gateway_service_node_modules:
+    driver: local
+  frontend_node_modules:
+    driver: local
+
+networks:
+  store-management-net:
+    name: store-management-net
+    driver: bridge
+

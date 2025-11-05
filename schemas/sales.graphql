@@ -81,8 +81,8 @@ type WeeklySales {
 
 "월별 매출 집계"
 type MonthlySales {
-  year: Int!
-  month: Int!
+  year: Float!
+  month: Float!
   storeId: ID
   totalSales: Float!
   transactionCount: Int!
@@ -168,8 +168,8 @@ type Query {
   "월별 매출 집계"
   monthlySales(
     storeId: ID
-    year: Int!
-    month: Int!
+    year: Float!
+    month: Float!
   ): MonthlySales!
   "매출 대시보드"
   salesDashboard(

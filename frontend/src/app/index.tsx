@@ -8,7 +8,14 @@ import { EmployeeDetailPage } from '@pages/employees/ui/EmployeeDetailPage';
 import { EmployeeFormPage } from '@pages/employees/ui/EmployeeFormPage';
 import { EmployeeListPage } from '@pages/employees/ui/EmployeeListPage';
 import { HomePage } from '@pages/home/ui/HomePage';
+import { PurchaseOrderDetailPage } from '@pages/inventory/ui/PurchaseOrderDetailPage';
+import { PurchaseOrderFormPage } from '@pages/inventory/ui/PurchaseOrderFormPage';
+import { PurchaseOrdersListPage } from '@pages/inventory/ui/PurchaseOrdersListPage';
 import { LoginPage } from '@pages/login/ui/LoginPage';
+import { DailySalesPage } from '@pages/sales/ui/DailySalesPage';
+import { MonthlySalesPage } from '@pages/sales/ui/MonthlySalesPage';
+import { SalesDashboardPage } from '@pages/sales/ui/SalesDashboardPage';
+import { WeeklySalesPage } from '@pages/sales/ui/WeeklySalesPage';
 import { AuthProvider } from '@shared/lib/auth/auth-context';
 import { ErrorBoundary } from '@shared/ui/ErrorBoundary';
 import { Header } from '@widgets/header/ui/Header';
@@ -81,6 +88,35 @@ const Router: React.FC = () => {
 
   if (path === '/attendance/reports/weekly' || path === '/attendance/reports/weekly/') {
     return <WeeklyAttendanceReportPage />;
+  }
+
+  if (path === '/inventory/purchase-orders' || path === '/inventory/purchase-orders/') {
+    return <PurchaseOrdersListPage />;
+  }
+
+  if (path === '/inventory/purchase-orders/new' || path === '/inventory/purchase-orders/new/') {
+    return <PurchaseOrderFormPage />;
+  }
+
+  const purchaseOrderMatch = path.match(/^\/inventory\/purchase-orders\/([^/]+)$/);
+  if (purchaseOrderMatch) {
+    return <PurchaseOrderDetailPage purchaseOrderId={purchaseOrderMatch[1]} />;
+  }
+
+  if (path === '/sales/daily' || path === '/sales/daily/') {
+    return <DailySalesPage />;
+  }
+
+  if (path === '/sales/weekly' || path === '/sales/weekly/') {
+    return <WeeklySalesPage />;
+  }
+
+  if (path === '/sales/monthly' || path === '/sales/monthly/') {
+    return <MonthlySalesPage />;
+  }
+
+  if (path === '/sales/dashboard' || path === '/sales/dashboard/') {
+    return <SalesDashboardPage />;
   }
 
   return <HomePage />;
