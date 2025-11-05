@@ -212,4 +212,6 @@ query {
 
 - [Apollo Federation 문서](https://www.apollographql.com/docs/federation/)
 - [DataLoader 패턴](https://github.com/graphql/dataloader)
+- [Federation 스키마 개발 가이드](./federation-schema-guide.md)
+- [스키마 버전 관리 전략](./schema-versioning.md)
 - [NestJS GraphQL Federation](https://docs.nestjs.com/graphql/federation)
