@@ -308,6 +308,40 @@
 
 - 현재 v0.0.x 단계의 진행 중 또는 예정 작업 없음
 
+#### 최근 완료된 작업
+
+- ✅ `tasks/spec/market-analysis.md` - 시장 분석 및 경쟁사 조사
+  - 상태: completed
+  - 완료일: 2025-11-07
+  - 목적: 상점 운영 플랫폼 시장의 경쟁 환경 분석 및 제품 포지셔닝 전략 수립
+  - 완료된 항목:
+    - 타겟 시장 규모 및 성장 추세 조사
+    - 주요 경쟁사 솔루션 비교 분석 (Square, Lightspeed, Toast 등)
+    - 사용자 니즈 분석 및 페인 포인트 식별
+    - 제품 포지셔닝 전략 제안
+  - 산출물: 시장 분석 문서 (`docs/spec/market-analysis.md`), 경쟁사 비교표
+
+- ✅ `tasks/spec/technology-stack-selection.md` - 기술 스택 선정 근거 문서화
+  - 상태: completed
+  - 완료일: 2025-11-07
+  - 목적: SPEC.md에서 정의된 기술 스택의 선정 근거를 문서화하고 대안 기술과 비교 분석
+  - 완료된 항목:
+    - 프론트엔드/백엔드/데이터베이스/인프라 스택 선정 근거 문서화
+    - 대안 기술 비교 분석 및 트레이드오프 분석 (React vs Vue/Angular, NestJS vs Express 등)
+    - 기술 의존성 분석 및 관리 전략 수립
+  - 산출물: 기술 스택 선정 문서 (`docs/architecture/technology-stack-selection.md`), 의존성 관리 전략 문서 (`docs/ops/dependency-management.md`)
+
+- ✅ `tasks/spec/technical-spikes.md` - 핵심 기술 검증 PoC
+  - 상태: completed
+  - 완료일: 2025-11-07
+  - 목적: 핵심 기술 스택의 실제 작동 여부를 검증하고 기술적 리스크 사전 파악
+  - 완료된 항목:
+    - GraphQL Federation PoC 검증 리포트 작성
+    - NestJS GraphQL Subgraph PoC 검증 리포트 작성
+    - 프론트엔드 기술 스택 PoC 검증 리포트 작성
+    - 데이터베이스 통합 PoC 검증 리포트 작성
+  - 산출물: 각 PoC별 검증 리포트 (`docs/architecture/spikes/`), 기술적 리스크 및 해결 방안 문서
+
 ---
 
 ### v0.1.x: PROJECT - Architecture, interfaces, API contracts, method stubs
