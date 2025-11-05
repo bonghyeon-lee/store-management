@@ -1,5 +1,6 @@
 import { Query, Resolver, Args, ID } from '@nestjs/graphql';
 import { attendanceRecords } from './attendance.resolver';
+import { employees } from './employee.resolver';
 import {
   DailyAttendanceReport,
   WeeklyAttendanceReport,
@@ -71,14 +72,17 @@ export class ReportResolver {
     const attendanceRate = checkedInCount / totalEmployees;
 
     // 직원별 통계
-    const employeeStats = filtered.map((record) => ({
-      employeeId: record.employeeId,
-      employeeName: `직원-${record.employeeId}`, // 실제로는 Employee 조회 필요
-      checkInAt: record.checkInAt,
-      checkOutAt: record.checkOutAt,
-      workingHours: record.workingHours || 0,
-      status: record.status,
-    }));
+    const employeeStats = filtered.map((record) => {
+      const employee = employees.get(record.employeeId);
+      return {
+        employeeId: record.employeeId,
+        employeeName: employee?.name || `직원-${record.employeeId}`,
+        checkInAt: record.checkInAt,
+        checkOutAt: record.checkOutAt,
+        workingHours: record.workingHours || 0,
+        status: record.status,
+      };
+    });
 
     return {
       date,
@@ -126,14 +130,17 @@ export class ReportResolver {
       const totalEmployees = dayRecords.length || 1;
       const attendanceRate = checkedInCount / totalEmployees;
 
-      const employeeStats = dayRecords.map((record) => ({
-        employeeId: record.employeeId,
-        employeeName: `직원-${record.employeeId}`,
-        checkInAt: record.checkInAt,
-        checkOutAt: record.checkOutAt,
-        workingHours: record.workingHours || 0,
-        status: record.status,
-      }));
+      const employeeStats = dayRecords.map((record) => {
+        const employee = employees.get(record.employeeId);
+        return {
+          employeeId: record.employeeId,
+          employeeName: employee?.name || `직원-${record.employeeId}`,
+          checkInAt: record.checkInAt,
+          checkOutAt: record.checkOutAt,
+          workingHours: record.workingHours || 0,
+          status: record.status,
+        };
+      });
 
       return {
         date,

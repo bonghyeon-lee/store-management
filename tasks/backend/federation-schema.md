@@ -60,7 +60,10 @@ related_prompts:
 
 - ✅ GraphQL Inspector 계약 테스트 설정 완료
 - ✅ Federation Gateway 로컬 통합 테스트 스크립트 작성 완료
-- ⏳ 실제 서비스 실행 후 통합 테스트 수행 필요
+- ✅ 실제 서비스 실행 후 통합 테스트 수행 완료 (2025-01-27)
+  - 모든 스키마 파일 검증 통과
+  - 모든 Subgraph 서비스 헬스 체크 통과
+  - Federation 통합 스키마 검증 완료 (Gateway 인증 설정은 별도 확인 필요)
 
 ## 참고사항
 

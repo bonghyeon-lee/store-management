@@ -348,14 +348,32 @@
 
 #### 진행 중 작업
 
-- 🔄 `tasks/backend/federation-schema.md` - Federation Schema Baseline
-  - 상태: in-progress
-  - 목적: Attendance, Inventory, Sales 서비스의 GraphQL Subgraph 스키마 초안 정의 및 Federation 키 전략 확정
-  - 산출물: `schemas/attendance.graphql`, `schemas/inventory.graphql`, `schemas/sales.graphql` 초안
+- 현재 v0.1.x 단계의 진행 중 작업 없음
 
-- 🔄 `tasks/backend/generate-backend-subgraphs-from-federation.md` - Subgraph 서비스 스캐폴딩
-  - 상태: in-progress
+#### 완료된 작업
+
+- ✅ `tasks/backend/federation-schema.md` - Federation Schema Baseline
+  - 상태: completed
+  - 완료일: 2025-01-27
+  - 목적: Attendance, Inventory, Sales 서비스의 GraphQL Subgraph 스키마 초안 정의 및 Federation 키 전략 확정
+  - 완료된 항목:
+    - ✅ 모든 서비스 스키마 정의 (attendance, inventory, sales, auth, notification)
+    - ✅ Federation 디렉티브 문서화 (@key, @requires, @provides, @external)
+    - ✅ GraphQL Inspector를 사용한 계약 테스트 설정
+    - ✅ 스키마 검증 스크립트 작성 (validate-schemas.js, diff-schemas.js, verify-federation.js)
+    - ✅ Backend Runbook 업데이트
+  - 산출물: `schemas/attendance.graphql`, `schemas/inventory.graphql`, `schemas/sales.graphql`, `schemas/auth.graphql`, `schemas/notification.graphql` 초안
+
+- ✅ `tasks/backend/generate-backend-subgraphs-from-federation.md` - Subgraph 서비스 스캐폴딩
+  - 상태: completed
+  - 완료일: 2025-01-27
   - 목적: Federation 스키마를 기반으로 NestJS + Apollo Federation Subgraph 서비스 스캐폴딩
+  - 완료된 항목:
+    - ✅ 모든 서비스 디렉터리 생성 (attendance, inventory, sales, notification, auth)
+    - ✅ NestJS + Apollo Federation 설정 완료
+    - ✅ Code First 방식으로 GraphQL 스키마 자동 생성 설정
+    - ✅ 로컬 실행 스크립트 및 포트 할당 완료
+    - ✅ 문서 업데이트 완료
   - 산출물: 각 서비스 디렉터리 및 기본 구조
 
 #### 예정 작업
@@ -699,9 +717,14 @@
   - 상태: completed
   - 완료일: 2025-11-05
 
-- 📋 `tasks/ops/fix-integration-test-docker-compose-error.md` - 통합 테스트 Docker Compose 에러 수정
-  - 상태: pending
-  - 마감일: 2025-12-10
+- ✅ `tasks/ops/fix-integration-test-docker-compose-error.md` - 통합 테스트 Docker Compose 에러 수정
+  - 상태: completed
+  - 완료일: 2025-01-27
+  - 목적: GitHub Actions의 Integration Test 단계에서 `docker-compose` 명령어 오류 수정
+  - 완료된 항목:
+    - ✅ CI 워크플로우에서 모든 `docker-compose` 명령어를 `docker compose`로 변경
+    - ✅ Build, Start, Stop 단계 모두 수정 완료
+    - ✅ 헬스 체크 단계 개선 (6개 서비스 모두 확인)
 
 - 📋 `tasks/ops/implement-notification-auth-services.md` - Notification/Auth 서비스 구현
   - 상태: todo
