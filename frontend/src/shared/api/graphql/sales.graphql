@@ -40,7 +40,7 @@ query GetWeeklySales($storeId: ID, $weekStart: String!) {
   }
 }
 
-query GetMonthlySales($storeId: ID, $year: Int!, $month: Int!) {
+query GetMonthlySales($storeId: ID, $year: Float!, $month: Float!) {
   monthlySales(storeId: $storeId, year: $year, month: $month) {
     year
     month

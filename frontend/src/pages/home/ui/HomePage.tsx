@@ -43,6 +43,15 @@ export const HomePage: React.FC = () => {
             <Button onClick={() => (window.location.href = '/attendance/reports/weekly')}>
               주별 리포트
             </Button>
+            <Button onClick={() => (window.location.href = '/inventory/purchase-orders')}>
+              발주 관리
+            </Button>
+            <Button onClick={() => (window.location.href = '/sales/daily')}>일별 매출</Button>
+            <Button onClick={() => (window.location.href = '/sales/weekly')}>주별 매출</Button>
+            <Button onClick={() => (window.location.href = '/sales/monthly')}>월별 매출</Button>
+            <Button onClick={() => (window.location.href = '/sales/dashboard')}>
+              매출 대시보드
+            </Button>
           </div>
         </div>
       )}

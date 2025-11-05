@@ -90,27 +90,27 @@ related_prompts:
 
 #### 3.1 Purchase Order 기능
 
-- [ ] 발주 목록 조회 페이지
+- [x] 발주 목록 조회 페이지
   - GraphQL Query: `purchaseOrders(storeId, sku, status)`
-  - 발주 목록 테이블 컴포넌트
+  - 발주 목록 테이블 컴포넌트 (PurchaseOrdersListPage에 구현됨)
   - 상태 필터 컴포넌트 (PENDING, APPROVED, REJECTED, RECEIVED)
-- [ ] 발주 상세 조회 기능
+- [x] 발주 상세 조회 기능
   - GraphQL Query: `purchaseOrder(id)`
-  - 발주 상세 정보 컴포넌트
-- [ ] 발주 생성 기능
+  - 발주 상세 정보 컴포넌트 (PurchaseOrderDetailPage에 구현됨)
+- [x] 발주 생성 기능
   - GraphQL Mutation: `createPurchaseOrder(input)`
-  - 발주 요청 폼 컴포넌트
+  - 발주 요청 폼 컴포넌트 (PurchaseOrderFormPage에 구현됨)
   - SKU 선택 컴포넌트
   - 수량 입력 컴포넌트
-- [ ] 발주 승인 기능
+- [x] 발주 승인 기능
   - GraphQL Mutation: `approvePurchaseOrder(id, approvedQuantity, notes)`
-  - 승인 폼 컴포넌트
-- [ ] 발주 거부 기능
+  - 승인 폼 컴포넌트 (PurchaseOrderDetailPage에 구현됨)
+- [x] 발주 거부 기능
   - GraphQL Mutation: `rejectPurchaseOrder(id, notes)`
-  - 거부 폼 컴포넌트
-- [ ] 입고 처리 기능
+  - 거부 폼 컴포넌트 (PurchaseOrderDetailPage에 구현됨)
+- [x] 입고 처리 기능
   - GraphQL Mutation: `receiveInventory(purchaseOrderId, receivedQuantity, notes)`
-  - 입고 처리 폼 컴포넌트
+  - 입고 처리 폼 컴포넌트 (PurchaseOrderDetailPage에 구현됨)
 
 #### 3.2 Inventory 기능 확장
 
@@ -133,32 +133,32 @@ related_prompts:
 
 #### 4.1 매출 리포트 확장 기능
 
-- [ ] 일별 매출 리포트 페이지
+- [x] 일별 매출 리포트 페이지
   - GraphQL Query: `dailySales(storeId, date)`
-  - 매출 요약 카드 컴포넌트 (총 매출, 거래 건수, 평균 거래액)
+  - 매출 요약 카드 컴포넌트 (총 매출, 거래 건수, 평균 거래액) (DailySalesPage에 구현됨)
   - 채널별 매출 분류 컴포넌트
-  - 날짜 선택 컴포넌트
-- [ ] 주별 매출 리포트 페이지
+  - 날짜 선택 컴포넌트 (DatePicker 사용)
+- [x] 주별 매출 리포트 페이지
   - GraphQL Query: `weeklySales(storeId, weekStart)`
-  - 주별 리포트 컴포넌트
+  - 주별 리포트 컴포넌트 (WeeklySalesPage에 구현됨)
   - 전주 대비 증감률 표시
   - 일별 상세 데이터 표시
-  - 주 시작일 선택 컴포넌트
-- [ ] 월별 매출 리포트 페이지
+  - 주 시작일 선택 컴포넌트 (DatePicker 사용)
+- [x] 월별 매출 리포트 페이지
   - GraphQL Query: `monthlySales(storeId, year, month)`
-  - 월별 리포트 컴포넌트
+  - 월별 리포트 컴포넌트 (MonthlySalesPage에 구현됨)
   - 전월 대비 증감률 표시
   - 일별 상세 데이터 표시
-  - 년/월 선택 컴포넌트
-- [ ] 매출 대시보드 페이지
+  - 년/월 선택 컴포넌트 (DatePicker 사용)
+- [x] 매출 대시보드 페이지
   - GraphQL Query: `salesDashboard(storeId, startDate, endDate)`
-  - 대시보드 레이아웃 구성
+  - 대시보드 레이아웃 구성 (SalesDashboardPage에 구현됨)
   - 총 매출, 거래 건수, 평균 거래액 요약
   - 지점별 요약 컴포넌트
   - 상위/하위 성과 지점 컴포넌트
   - 채널별 매출 분포 컴포넌트
-  - 기간별 트렌드 차트 컴포넌트
-  - 기간 선택 컴포넌트
+  - 기간별 트렌드 차트 컴포넌트 (테이블로 표시, 차트는 미구현)
+  - 기간 선택 컴포넌트 (DateRangePicker 사용)
 
 #### 4.2 매출 데이터 시각화
 
