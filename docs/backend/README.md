@@ -42,44 +42,211 @@
 
 ## Federation 설계 노트
 
+### 스키마 생성 방식
+
 - Subgraph 스키마는 Code First 방식으로 자동 생성됩니다 (`schema.gql`)
-- 키 전략
-  - Attendance: `@key(fields: "storeId employeeId date")`
-  - InventoryItem: `@key(fields: "storeId sku")`
-  - Order: `@key(fields: "storeId orderId")`
-- 필수 지침
-  - 키 필드는 절대 nullable 하지 않음(ID/날짜 등 전역 식별자)
-  - 교차 서비스 의존은 `@requires`/`@provides` 도입 전, 데이터 흐름/캐시 전략 먼저 확정
-  - N+1 방지를 위해 각 키 조합에 대한 배치 로더 설계
+- 각 서비스의 `app.module.ts`에서 `ApolloFederationDriver`를 사용하여 Federation 2 지원
+- `autoSchemaFile` 옵션으로 스키마 파일이 자동 생성됩니다
+
+### Federation 키 전략
+
+각 엔티티의 Federation 키 설계:
+
+- **Employee** (Attendance 서비스): `@key(fields: "id")`
+- **Attendance**: `@key(fields: "storeId employeeId date")`
+- **Product** (Inventory 서비스): `@key(fields: "id")`
+- **InventoryItem**: `@key(fields: "storeId sku")`
+- **Order** (Sales 서비스): `@key(fields: "storeId orderId")`
+- **User** (Auth 서비스): `@key(fields: "id")`
+- **Notification**: `@key(fields: "id")`
+
+### 필수 지침
+
+1. **키 필드 설계**
+   - 키 필드는 절대 nullable 하지 않음 (ID/날짜 등 전역 식별자)
+   - 복합 키는 가능한 한 최소 필드로 구성
+   - 교차 서비스 참조는 `@key`로 식별 가능한 엔티티만 사용
+
+2. **서비스 간 의존성**
+   - 교차 서비스 의존은 `@requires`/`@provides` 도입 전, 데이터 흐름/캐시 전략 먼저 확정
+   - N+1 방지를 위해 각 키 조합에 대한 배치 로더 설계
+   - DataLoader 패턴을 사용하여 서비스 간 조인 최적화
+
+3. **스키마 버전 관리**
+   - Breaking Change는 반드시 버전 업그레이드와 함께 진행
+   - Schema Registry를 통해 변경 이력 추적
+   - Contract Test 자동화로 호환성 검증
+
+### Gateway 통합
+
+- Gateway는 `IntrospectAndCompose`를 사용하여 모든 Subgraph를 자동으로 통합
+- 각 Subgraph 서비스가 시작될 때까지 대기 (최대 60초)
+- 통합 스키마는 Gateway의 `/graphql` 엔드포인트에서 제공
 
 ## Registry/Contract Test 절차
 
-1. Rover 로그인: `rover config auth --key <APOLLO_KEY>`
-2. Subgraph 등록 예시:
-   - Attendance: `rover subgraph publish store-management@current --name attendance --schema schemas/attendance.graphql`
-   - Inventory: `rover subgraph publish store-management@current --name inventory --schema schemas/inventory.graphql`
-   - Sales: `rover subgraph publish store-management@current --name sales --schema schemas/sales.graphql`
-3. 계약 테스트(GraphQL Inspector): `graphql-inspector diff schema-old.graphql schema-new.graphql`
-4. 게이트웨이 로컬 통합 후 스모크 테스트 진행
+### Apollo Rover CLI 사용
+
+1. **Rover 로그인**
+   ```bash
+   rover config auth --key <APOLLO_KEY>
+   ```
+
+2. **Subgraph 등록**
+   ```bash
+   # Attendance 서비스
+   rover subgraph publish store-management@current \
+     --name attendance \
+     --schema schemas/attendance.graphql \
+     --routing-url http://localhost:4001/graphql
+   
+   # Inventory 서비스
+   rover subgraph publish store-management@current \
+     --name inventory \
+     --schema schemas/inventory.graphql \
+     --routing-url http://localhost:4002/graphql
+   
+   # Sales 서비스
+   rover subgraph publish store-management@current \
+     --name sales \
+     --schema schemas/sales.graphql \
+     --routing-url http://localhost:4003/graphql
+   
+   # Auth 서비스
+   rover subgraph publish store-management@current \
+     --name auth \
+     --schema schemas/auth.graphql \
+     --routing-url http://localhost:4005/graphql
+   
+   # Notification 서비스
+   rover subgraph publish store-management@current \
+     --name notification \
+     --schema schemas/notification.graphql \
+     --routing-url http://localhost:4004/graphql
+   ```
+
+3. **Supergraph 구성 다운로드**
+   ```bash
+   rover supergraph compose --config rover-config.yaml
+   ```
+
+### GraphQL Inspector 사용
+
+1. **스키마 변경 감지**
+   ```bash
+   graphql-inspector diff schema-old.graphql schema-new.graphql
+   ```
+
+2. **Breaking Change 검사**
+   ```bash
+   graphql-inspector validate schema.graphql
+   ```
+
+### Gateway 통합 테스트
+
+1. 모든 Subgraph 서비스가 실행 중인지 확인
+2. Gateway 서비스가 모든 Subgraph를 인식하는지 확인
+3. 통합 스키마가 올바르게 생성되는지 확인
+4. GraphQL Playground에서 쿼리 테스트 수행
 
 ## 로컬 실행 가이드 (Subgraphs)
 
-- 사전 준비: 각 서비스 디렉터리에서 의존성 설치 후 실행
-  - Attendance
-    - 디렉터리: `backend/attendance-service`
-    - 설치: `npm install`
-    - 개발 실행: `npm run start:dev` (기본 포트 4001)
-  - Inventory
-    - 디렉터리: `backend/inventory-service`
-    - 설치: `npm install`
-    - 개발 실행: `npm run start:dev` (기본 포트 4002)
-  - Sales
-    - 디렉터리: `backend/sales-service`
-    - 설치: `npm install`
-    - 개발 실행: `npm run start:dev` (기본 포트 4003)
+### 서비스별 실행 포트
 
-- Code First 방식: 각 서비스는 TypeScript 데코레이터로 스키마를 정의하고 `autoSchemaFile`로 자동 생성합니다.
-- 참고: 실제 데이터 연동 전까지 Resolver는 목 구현으로 동작합니다.
+| 서비스       | 포트 | GraphQL 엔드포인트            |
+| ------------ | ---- | ----------------------------- |
+| Gateway      | 4000 | http://localhost:4000/graphql |
+| Attendance   | 4001 | http://localhost:4001/graphql |
+| Inventory    | 4002 | http://localhost:4002/graphql |
+| Sales        | 4003 | http://localhost:4003/graphql |
+| Notification | 4004 | http://localhost:4004/graphql |
+| Auth         | 4005 | http://localhost:4005/graphql |
+
+### 서비스 실행 절차
+
+1. **각 서비스 디렉터리에서 의존성 설치 및 실행**
+   ```bash
+   # Attendance 서비스
+   cd backend/attendance-service
+   npm install
+   npm run start:dev
+   
+   # Inventory 서비스
+   cd backend/inventory-service
+   npm install
+   npm run start:dev
+   
+   # Sales 서비스
+   cd backend/sales-service
+   npm install
+   npm run start:dev
+   
+   # Notification 서비스
+   cd backend/notification-service
+   npm install
+   npm run start:dev
+   
+   # Auth 서비스
+   cd backend/auth-service
+   npm install
+   npm run start:dev
+   ```
+
+2. **Gateway 서비스 실행**
+   ```bash
+   cd backend/gateway-service
+   npm install
+   npm run start:dev
+   ```
+   
+   Gateway는 모든 Subgraph 서비스가 시작될 때까지 대기합니다 (최대 60초).
+
+3. **스키마 생성 확인**
+   - 각 서비스 실행 후 `schema.gql` 파일이 자동 생성됩니다
+   - Code First 방식: TypeScript 데코레이터로 스키마를 정의하고 `autoSchemaFile`로 자동 생성
+   - 참고: 실제 데이터 연동 전까지 Resolver는 목 구현으로 동작합니다
+
+### Docker Compose를 사용한 실행
+
+프로젝트 루트에서 다음 명령어로 모든 서비스를 한 번에 실행할 수 있습니다:
+
+```bash
+# 개발 환경 (핫 리로드)
+docker-compose -f docker-compose.dev.yml up
+
+# 프로덕션 환경
+docker-compose up
+```
+
+### Federation 스키마 파일 위치
+
+각 서비스의 스키마는 다음 위치에 있습니다:
+- `schemas/attendance.graphql` - Attendance 서비스 스키마 (SDL)
+- `schemas/inventory.graphql` - Inventory 서비스 스키마 (SDL)
+- `schemas/sales.graphql` - Sales 서비스 스키마 (SDL)
+- `schemas/auth.graphql` - Auth 서비스 스키마 (SDL)
+- `schemas/notification.graphql` - Notification 서비스 스키마 (SDL)
+
+각 서비스 디렉터리의 `schema.gql` 파일은 Code First 방식으로 자동 생성된 Federation 스키마입니다.
+
+### Federation 디렉티브 추가 방법
+
+NestJS Code First 방식에서 Federation 디렉티브를 추가하려면 `@Directive()` 데코레이터를 사용합니다:
+
+```typescript
+import { ObjectType, Field, ID, Directive } from '@nestjs/graphql';
+
+@ObjectType()
+@Directive('@key(fields: "id")')
+export class Employee {
+  @Field(() => ID)
+  id!: string;
+  
+  // ... 다른 필드들
+}
+```
+
+현재는 Code First 방식으로 자동 생성되지만, Federation 디렉티브는 별도로 추가해야 합니다 (향후 작업 예정).
 
 ## 데이터 관리
 

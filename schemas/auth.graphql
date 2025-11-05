@@ -1,0 +1,68 @@
+schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: [
+    "@key",
+    "@requires",
+    "@provides",
+    "@external"
+  ]) {
+  query: Query
+  mutation: Mutation
+}
+
+"사용자"
+type User @key(fields: "id") {
+  id: ID!
+  email: String!
+  name: String!
+  role: UserRole!
+  storeId: ID
+  createdAt: String!
+  lastLoginAt: String
+}
+
+enum UserRole {
+  HQ_ADMIN
+  STORE_MANAGER
+  EMPLOYEE
+}
+
+"인증 토큰"
+type AuthToken {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+input RegisterUserInput {
+  email: String!
+  password: String!
+  name: String!
+  role: UserRole!
+  storeId: String
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Query {
+  "현재 사용자 정보 조회"
+  currentUser: User
+  "사용자 조회"
+  user(id: ID!): User
+  "사용자 목록 조회"
+  users(storeId: ID, role: UserRole): [User!]!
+}
+
+type Mutation {
+  "사용자 등록"
+  registerUser(input: RegisterUserInput!): User!
+  "로그인"
+  login(input: LoginInput!): AuthToken!
+  "토큰 갱신"
+  refreshToken(refreshToken: String!): AuthToken!
+  "로그아웃"
+  logout: Boolean!
+}
+
