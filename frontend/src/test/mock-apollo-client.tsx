@@ -1,18 +1,19 @@
 /**
  * Apollo Client Mock 설정
- * 
+ *
  * 프론트엔드 테스트에서 Apollo Client를 Mock하기 위한 유틸리티
  */
 
+import { DocumentNode } from 'graphql';
 import { MockedProvider, MockedProviderProps } from '@apollo/client/testing';
 import { ReactNode } from 'react';
 
 /**
  * GraphQL 쿼리 Mock 생성 헬퍼
  */
-export function createMockQuery<TData = any>(
-  query: any,
-  variables?: Record<string, any>,
+export function createMockQuery<TData = unknown>(
+  query: DocumentNode,
+  variables?: Record<string, unknown>,
   data?: TData
 ) {
   return {
@@ -29,9 +30,9 @@ export function createMockQuery<TData = any>(
 /**
  * GraphQL 뮤테이션 Mock 생성 헬퍼
  */
-export function createMockMutation<TData = any>(
-  mutation: any,
-  variables?: Record<string, any>,
+export function createMockMutation<TData = unknown>(
+  mutation: DocumentNode,
+  variables?: Record<string, unknown>,
   data?: TData
 ) {
   return {
@@ -49,9 +50,9 @@ export function createMockMutation<TData = any>(
  * GraphQL 에러 Mock 생성 헬퍼
  */
 export function createMockError(
-  query: any,
-  variables?: Record<string, any>,
-  errors?: any[]
+  query: DocumentNode,
+  variables?: Record<string, unknown>,
+  errors?: Array<{ message: string; extensions?: Record<string, unknown> }>
 ) {
   return {
     request: {

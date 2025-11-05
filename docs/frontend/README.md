@@ -146,6 +146,7 @@ const config: CodegenConfig = {
 ```
 
 코드젠 실행:
+
 ```bash
 npm run codegen
 ```
@@ -255,6 +256,100 @@ import { formatCurrency } from "@shared/lib/format";
 - Playwright/Cypress로 주요 플로우 E2E 테스트
 - Lighthouse CI로 성능/접근성 CI 단계 측정
 
+### GraphQL 쿼리/뮤테이션 테스트
+
+Apollo Client의 `MockedProvider`를 사용하여 GraphQL 쿼리와 뮤테이션을 테스트합니다.
+
+#### 테스트 유틸리티
+
+`src/test/mock-apollo-client.tsx`에 테스트용 유틸리티가 포함되어 있습니다:
+
+- `createMockQuery`: GraphQL 쿼리 Mock 생성
+- `createMockMutation`: GraphQL 뮤테이션 Mock 생성
+- `createMockError`: 에러 응답 Mock 생성
+- `TestApolloProvider`: MockedProvider를 래핑한 테스트용 Provider
+
+#### 테스트 예시
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { gql } from '@apollo/client';
+import { TestApolloProvider, createMockQuery } from '@test/mock-apollo-client';
+import { useQuery } from '@apollo/client';
+
+const GET_EMPLOYEES = gql`
+  query GetEmployees($storeId: ID) {
+    employees(storeId: $storeId) {
+      id
+      name
+      email
+    }
+  }
+`;
+
+function EmployeeList({ storeId }: { storeId?: string }) {
+  const { data, loading, error } = useQuery(GET_EMPLOYEES, {
+    variables: { storeId },
+  });
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      {data?.employees.map((employee: any) => (
+        <div key={employee.id}>{employee.name}</div>
+      ))}
+    </div>
+  );
+}
+
+describe('EmployeeList', () => {
+  it('should fetch and display employees', async () => {
+    const mocks = [
+      createMockQuery(
+        GET_EMPLOYEES,
+        { storeId: '1' },
+        {
+          employees: [
+            { id: '1', name: '홍길동', email: 'hong@example.com' },
+          ],
+        }
+      ),
+    ];
+
+    render(
+      <TestApolloProvider mocks={mocks}>
+        <EmployeeList storeId="1" />
+      </TestApolloProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('홍길동')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+#### 테스트 실행
+
+```bash
+# 모든 테스트 실행
+npm run test
+
+# Watch 모드로 실행
+npm run test:watch
+
+# 커버리지 리포트 생성
+npm run test:coverage
+
+# 테스트 UI 실행
+npm run test:ui
+```
+
+참고: 테스트 예시 파일은 `src/shared/api/graphql/__tests__/` 디렉터리에 있습니다.
+
 ## 환경 변수
 
 프론트엔드에서 사용하는 환경 변수:
@@ -262,7 +357,8 @@ import { formatCurrency } from "@shared/lib/format";
 - `VITE_GRAPHQL_ENDPOINT`: GraphQL Gateway 엔드포인트 URL (기본값: `http://localhost:4000/graphql`)
 
 `.env` 파일에 설정:
-```
+
+```env
 VITE_GRAPHQL_ENDPOINT=http://localhost:4000/graphql
 ```
 
@@ -271,24 +367,29 @@ VITE_GRAPHQL_ENDPOINT=http://localhost:4000/graphql
 ### 로컬 개발 환경 설정
 
 1. **의존성 설치**
+
    ```bash
    cd frontend
    npm install
    ```
 
 2. **개발 서버 실행**
+
    ```bash
    npm run dev
    ```
+
    - 기본 포트: `5173` (Vite)
    - 핫 리로드 지원
 
 3. **코드젠 실행** (스키마 변경 시)
+
    ```bash
    npm run codegen
    ```
 
 4. **빌드**
+
    ```bash
    npm run build
    ```
@@ -301,6 +402,7 @@ VITE_GRAPHQL_ENDPOINT=http://localhost:4000/graphql
 4. 컴포넌트에서 생성된 훅 사용
 
 예시:
+
 ```graphql
 # src/shared/api/graphql/attendance.graphql
 query GetEmployees($storeId: ID) {

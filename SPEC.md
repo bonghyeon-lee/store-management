@@ -393,13 +393,21 @@
     - 스키마 버전 관리 전략 (`docs/backend/schema-versioning.md`)
     - Federation 통합 문서 업데이트 (`docs/backend/federation-integration.md`)
 
-- 📋 `tasks/frontend/graphql-client.md` - Apollo Client Setup & UI Contract
-  - 상태: todo
+- ✅ `tasks/frontend/graphql-client.md` - Apollo Client Setup & UI Contract
+  - 상태: completed
+  - 완료일: 2025-01-27
   - 목적: 관리 콘솔과 점장 포털에서 사용하는 Apollo Client 구성 표준화 및 초기 UI/데이터 계약 수립
-  - 완료 기준:
-    - Apollo Client 인스턴스 구성 (Auth Link, Error Link, Retry Link)
-    - 코드젠 파이프라인(GraphQL Code Generator) 설정
-    - Attendance/Inventory 조회 화면 와이어프레임 연결
+  - 완료된 항목:
+    - ✅ Apollo Client 인스턴스 구성 (Auth Link, Error Link, Retry Link)
+    - ✅ 코드젠 파이프라인(GraphQL Code Generator) 설정
+    - ✅ Attendance/Inventory 조회 화면 구현 및 GraphQL 쿼리 연결
+    - ✅ GraphQL 쿼리 훅 유닛 테스트 예시 작성
+    - ✅ 프론트엔드 문서 업데이트 (`docs/frontend/README.md`)
+  - 산출물:
+    - Apollo Client 설정 (`frontend/src/app/providers/apollo.tsx`)
+    - GraphQL 쿼리 파일 (`frontend/src/shared/api/graphql/`)
+    - 테스트 예시 (`frontend/src/shared/api/graphql/__tests__/`)
+    - 프론트엔드 문서 (`docs/frontend/README.md`)
 
 ---
 
