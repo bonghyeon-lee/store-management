@@ -3,7 +3,7 @@ title: "[Tests] 테스트 프레임워크 설정"
 owner: backend-team, frontend-team
 status: completed
 priority: high
-due: 2025-11-15
+due: 2025-11-18
 related_prompts:
   - ../prompts/test-strategy.md
 ---

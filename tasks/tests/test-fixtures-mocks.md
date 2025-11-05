@@ -3,7 +3,7 @@ title: "[Tests] 테스트 Fixtures 및 Mock 데이터"
 owner: backend-team, frontend-team
 status: in_progress
 priority: medium
-due: 2025-11-18
+due: 2025-11-20
 related_prompts:
   - ../prompts/test-strategy.md
 ---

@@ -3,7 +3,7 @@ title: "[Frontend] 최신 백엔드 기능 연동 MVP"
 owner: frontend-team
 status: todo
 priority: high
-due: 2025-11-10
+due: 2025-12-15
 related_prompts:
   - ../prompts/frontend-wireframes.md
 ---

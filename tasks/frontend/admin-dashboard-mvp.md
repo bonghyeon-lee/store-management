@@ -3,7 +3,7 @@ title: "[Frontend] 관리자 대시보드 MVP 구현"
 owner: frontend-team
 status: todo
 priority: high
-due: 2025-11-05
+due: 2025-12-18
 related_prompts:
   - ../prompts/frontend-wireframes.md
 ---

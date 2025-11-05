@@ -3,7 +3,7 @@ title: "[Frontend] Apollo Client Setup & UI Contract"
 owner: frontend-engineer
 status: todo
 priority: high
-due: 2025-11-06
+due: 2025-11-15
 related_prompts:
   - ../../prompts/frontend-wireframes.md
   - ../../prompts/graphql-contract-review.md

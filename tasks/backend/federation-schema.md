@@ -3,7 +3,7 @@ title: "[Backend] Federation Schema Baseline"
 owner: backend-service
 status: in-progress
 priority: high
-due: 2025-11-08
+due: 2025-11-12
 related_prompts:
   - ../../prompts/backend-service-brief.md
   - ../../prompts/graphql-contract-review.md

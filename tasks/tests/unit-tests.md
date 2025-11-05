@@ -3,7 +3,7 @@ title: "[Tests] 단위 테스트 작성"
 owner: backend-team, frontend-team
 status: todo
 priority: high
-due: 2025-11-20
+due: 2025-11-22
 related_prompts:
   - ../prompts/test-strategy.md
 ---

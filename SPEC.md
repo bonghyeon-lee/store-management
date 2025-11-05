@@ -645,17 +645,21 @@
 
 #### 버그 수정 작업
 
-- 🔄 `tasks/ops/fix-github-actions-pr1-failures.md` - GitHub Actions PR1 실패 수정
-  - 상태: in-progress
+- ✅ `tasks/ops/fix-github-actions-pr1-failures.md` - GitHub Actions PR1 실패 수정
+  - 상태: completed
+  - 완료일: 2025-11-05
 
-- 🔄 `tasks/ops/fix-github-actions-failures-2025-11-04.md` - GitHub Actions 실패 수정
-  - 상태: in-progress
+- ✅ `tasks/ops/fix-github-actions-failures-2025-11-04.md` - GitHub Actions 실패 수정
+  - 상태: completed
+  - 완료일: 2025-11-05
 
-- 🔄 `tasks/ops/fix-github-actions-failure-0f75c29.md` - GitHub Actions 실패 수정
-  - 상태: in-progress
+- ✅ `tasks/ops/fix-github-actions-failure-0f75c29.md` - GitHub Actions 실패 수정
+  - 상태: completed
+  - 완료일: 2025-11-05
 
 - 📋 `tasks/ops/fix-integration-test-docker-compose-error.md` - 통합 테스트 Docker Compose 에러 수정
   - 상태: pending
+  - 마감일: 2025-12-10
 
 - 📋 `tasks/ops/implement-notification-auth-services.md` - Notification/Auth 서비스 구현
   - 상태: todo
