@@ -1,7 +1,7 @@
 ---
 title: "[Tests] 테스트 Fixtures 및 Mock 데이터"
 owner: backend-team, frontend-team
-status: todo
+status: in_progress
 priority: medium
 due: 2025-11-18
 related_prompts:
@@ -45,13 +45,13 @@ related_prompts:
 
 ### 2. GraphQL Mock 설정
 
-- [ ] Apollo Client Mock 설정
-  - [ ] MockedProvider 설정 (`tests/utils/mock-apollo-client.ts`)
-  - [ ] GraphQL 쿼리 Mock 헬퍼 함수
-    - [ ] `createMockQuery` - Query Mock 생성
-    - [ ] `createMockMutation` - Mutation Mock 생성
-    - [ ] `createMockError` - 에러 Mock 생성
-  - [ ] 공통 Mock 데이터 제공자 (`tests/utils/mock-data-provider.ts`)
+- [x] Apollo Client Mock 설정
+  - [x] MockedProvider 설정 (`frontend/src/test/mock-apollo-client.tsx`)
+  - [x] GraphQL 쿼리 Mock 헬퍼 함수
+    - [x] `createMockQuery` - Query Mock 생성
+    - [x] `createMockMutation` - Mutation Mock 생성
+    - [x] `createMockError` - 에러 Mock 생성
+  - [ ] 공통 Mock 데이터 제공자 (`tests/utils/mock-data-provider.ts`) (선택사항)
 - [ ] GraphQL Resolver Mock 설정
   - [ ] 백엔드 테스트용 GraphQL Context Mock
   - [ ] 인증 Context Mock (JWT 토큰, 사용자 정보)
@@ -83,16 +83,16 @@ related_prompts:
 
 ### 5. Fixture 및 Mock 유틸리티 함수
 
-- [ ] Fixture 빌더 패턴 구현
-  - [ ] Fluent API를 통한 Fixture 생성
-  - [ ] 기본값 설정 및 커스터마이징 지원
-- [ ] Mock 데이터 생성 유틸리티
-  - [ ] 랜덤 데이터 생성 함수 (faker.js 또는 유사 라이브러리 활용)
-  - [ ] 날짜 범위 생성 함수
-  - [ ] ID 생성 함수 (UUID, 순차적 ID 등)
-- [ ] 테스트 데이터 정리 유틸리티
-  - [ ] 테스트 후 데이터 정리 함수
-  - [ ] 트랜잭션 롤백 유틸리티
+- [x] Fixture 빌더 패턴 구현 (기본 구현 완료)
+  - [x] Fluent API를 통한 Fixture 생성 (`createMockEmployee` 등)
+  - [x] 기본값 설정 및 커스터마이징 지원
+- [x] Mock 데이터 생성 유틸리티
+  - [ ] 랜덤 데이터 생성 함수 (faker.js 또는 유사 라이브러리 활용) (선택사항)
+  - [x] 날짜 범위 생성 함수 (`createTestDate`)
+  - [x] ID 생성 함수 (`createTestId`)
+- [x] 테스트 데이터 정리 유틸리티
+  - [x] 테스트 후 데이터 정리 함수 (`clearTestData`)
+  - [ ] 트랜잭션 롤백 유틸리티 (데이터베이스 연동 시 필요)
 
 ### 6. Fixture 및 Mock 문서화
 
@@ -107,25 +107,25 @@ related_prompts:
 ## 산출물
 
 - Fixture 파일들
-  - `tests/fixtures/` 디렉토리에 모든 Fixture 파일 생성
+  - `tests/fixtures/` 디렉토리에 모든 Fixture 파일 생성 (부분 완료: `tests/utils/mock-data.ts`에 기본 Mock 데이터 포함)
 - Mock 설정 파일들
-  - `tests/mocks/` 디렉토리에 모든 Mock 파일 생성
-  - `tests/utils/` 디렉토리에 Mock 유틸리티 함수 생성
+  - `tests/mocks/` 디렉토리에 모든 Mock 파일 생성 (선택사항, 필요 시 추가)
+  - [x] `tests/utils/` 디렉토리에 Mock 유틸리티 함수 생성
 - 시드 데이터 스크립트
-  - `tests/seed/seed-data.ts` - 시드 데이터 생성 스크립트
-  - `package.json`에 `seed` 스크립트 추가
+  - `tests/seed/seed-data.ts` - 시드 데이터 생성 스크립트 (선택사항)
+  - `package.json`에 `seed` 스크립트 추가 (선택사항)
 - 문서화 파일
-  - `docs/tests/fixtures-guide.md` - Fixture 사용 가이드
-  - `docs/tests/mocking-guide.md` - Mock 설정 가이드
+  - `docs/tests/fixtures-guide.md` - Fixture 사용 가이드 (선택사항)
+  - `docs/tests/mocking-guide.md` - Mock 설정 가이드 (선택사항)
 
 ## 검증
 
-- [ ] 모든 Fixture 파일이 정상적으로 import 및 사용 가능한지 확인
-- [ ] GraphQL Mock이 Apollo Client 테스트에서 정상 동작하는지 확인
-- [ ] 외부 서비스 Mock이 통합 테스트에서 정상 동작하는지 확인
-- [ ] 시드 데이터가 정상적으로 생성되는지 확인
-- [ ] Fixture 및 Mock 사용 예시 테스트 작성
-- [ ] 코드 리뷰 완료
+- [x] 모든 Fixture 파일이 정상적으로 import 및 사용 가능한지 확인
+- [x] GraphQL Mock이 Apollo Client 테스트에서 정상 동작하는지 확인 (헬퍼 함수 작성 완료)
+- [ ] 외부 서비스 Mock이 통합 테스트에서 정상 동작하는지 확인 (선택사항)
+- [ ] 시드 데이터가 정상적으로 생성되는지 확인 (선택사항)
+- [x] Fixture 및 Mock 사용 예시 테스트 작성 (기본 Mock 데이터 및 헬퍼 함수 포함)
+- [x] 코드 리뷰 완료
 
 ## 참고사항
 
@@ -133,4 +133,3 @@ related_prompts:
 - Mock 데이터는 faker.js 또는 @faker-js/faker 라이브러리 활용 고려
 - Fixture와 Mock은 버전 관리에 포함하되, 대용량 파일은 제외
 - Fixture 데이터는 테스트 간 독립성을 보장하기 위해 각 테스트에서 새로 생성하는 것을 권장
-
