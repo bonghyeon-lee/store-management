@@ -1,9 +1,10 @@
 ---
 title: "[Analytics] KPI Framework Definition"
 owner: analytics-agent
-status: todo
+status: completed
 priority: medium
 due: 2025-11-07
+completed: 2025-11-07
 related_prompts:
   - ../../prompts/analytics-kpi-workshop.md
   - ../../prompts/product-discovery.md
