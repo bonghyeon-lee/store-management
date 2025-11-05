@@ -1,6 +1,8 @@
-import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float, Directive } from '@nestjs/graphql';
+import { Product } from './product.model';
 
 @ObjectType({ description: '재고 항목' })
+@Directive('@key(fields: "storeId sku")')
 export class InventoryItem {
   @Field(() => ID)
   storeId!: string;
@@ -22,6 +24,10 @@ export class InventoryItem {
 
   @Field()
   updatedAt!: string;
+
+  // Federation 확장: Product 참조
+  @Field(() => Product, { nullable: true })
+  product?: Product;
 }
 
 @ObjectType({ description: '재고 실사 이력' })

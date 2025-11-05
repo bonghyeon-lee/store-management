@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, ID, registerEnumType, Directive } from '@nestjs/graphql';
 
 export enum UserRole {
   HQ_ADMIN = 'HQ_ADMIN',
@@ -11,6 +11,7 @@ registerEnumType(UserRole, {
 });
 
 @ObjectType({ description: '사용자' })
+@Directive('@key(fields: "id")')
 export class User {
   @Field(() => ID)
   id!: string;

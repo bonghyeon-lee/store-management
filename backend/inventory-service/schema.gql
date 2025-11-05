@@ -35,6 +35,7 @@ type InventoryAudit {
 type InventoryItem {
   """마지막 실사 일시"""
   lastAuditAt: String
+  product: Product
 
   """현재 재고 수량"""
   quantityOnHand: Float!

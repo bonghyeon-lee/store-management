@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: "20"
 
 jobs:
   # 백엔드 서비스 빌드 및 테스트
@@ -20,6 +20,8 @@ jobs:
           - attendance-service
           - inventory-service
           - sales-service
+          - notification-service
+          - auth-service
           - gateway-service
     steps:
       - name: Checkout code
@@ -29,7 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: backend/${{ matrix.service }}/package-lock.json
 
       - name: Install dependencies
@@ -62,7 +64,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
@@ -102,6 +104,8 @@ jobs:
           - attendance-service
           - inventory-service
           - sales-service
+          - notification-service
+          - auth-service
           - gateway-service
           - frontend
     steps:
@@ -146,12 +150,33 @@ jobs:
 
       - name: Health check
         run: |
-          curl -f http://localhost:4000/health || exit 1
-          curl -f http://localhost:4001/health || exit 1
-          curl -f http://localhost:4002/health || exit 1
-          curl -f http://localhost:4003/health || exit 1
+          echo "Waiting for services to be healthy..."
+          timeout 120 bash -c 'until curl -f http://localhost:4000/health && \
+            curl -f http://localhost:4001/health && \
+            curl -f http://localhost:4002/health && \
+            curl -f http://localhost:4003/health && \
+            curl -f http://localhost:4004/health && \
+            curl -f http://localhost:4005/health; do sleep 2; done'
+          echo "All services are healthy!"
+
+      - name: Setup Node.js for tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Run Federation Integration Tests
+        env:
+          GATEWAY_URL: http://localhost:4000/graphql
+          JWT_SECRET: your-secret-key-change-in-production
+        run: |
+          echo "Running Federation integration tests..."
+          npm run test:federation
 
       - name: Stop services
         if: always()
         run: docker compose down
-
