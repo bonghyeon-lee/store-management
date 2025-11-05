@@ -65,6 +65,143 @@ export class Store {
 }
 ```
 
+### @requires 디렉티브
+
+`@requires` 디렉티브는 다른 서비스의 필드를 참조하여 현재 서비스의 필드를 계산할 때 사용합니다. 이는 **필드 레벨 권한**이나 **계산된 필드**를 구현할 때 유용합니다.
+
+**사용 시나리오:**
+- 다른 서비스의 데이터를 기반으로 필드를 계산해야 할 때
+- 필드 레벨 권한 검증을 위해 다른 서비스의 데이터가 필요할 때
+
+**예시: InventoryItem에서 Product 정보를 기반으로 총 가치 계산**
+
+```typescript
+// inventory.graphql
+type InventoryItem @key(fields: "storeId sku") {
+  storeId: ID!
+  sku: ID!
+  quantityOnHand: Int!
+  # Product 서비스의 unitPrice를 참조하여 계산
+  totalValue: Float! @requires(fields: "sku { unitPrice }")
+}
+
+# Product는 외부 타입으로 선언
+extend type Product @key(fields: "id") {
+  id: ID! @external
+  unitPrice: Float! @external
+}
+```
+
+**주의사항:**
+- `@requires`를 사용하면 해당 필드가 항상 다른 서비스에 의존하게 됩니다
+- 성능에 영향을 줄 수 있으므로 신중하게 사용해야 합니다
+- 가능하면 DataLoader 패턴을 사용한 ResolveField로 대체하는 것을 권장합니다
+
+### @provides 디렉티브
+
+`@provides` 디렉티브는 다른 서비스에서 정의한 타입의 필드를 현재 서비스에서 제공할 때 사용합니다. 주로 **Entity Reference**를 반환할 때 사용됩니다.
+
+**사용 시나리오:**
+- Query나 Mutation에서 다른 서비스의 Entity를 반환할 때
+- 다른 서비스의 필드를 포함하여 반환해야 할 때
+
+**예시: Order에서 Product 정보를 함께 반환**
+
+```typescript
+// sales.graphql
+type Order @key(fields: "storeId orderId") {
+  storeId: ID!
+  orderId: ID!
+  lineItems: [LineItem!]!
+}
+
+type LineItem {
+  sku: ID!
+  quantity: Int!
+  # Product 서비스의 필드를 제공
+  product: Product! @provides(fields: "id name unitPrice")
+}
+
+# Product는 외부 타입으로 선언
+extend type Product @key(fields: "id") {
+  id: ID! @external
+  name: String! @external
+  unitPrice: Float! @external
+}
+```
+
+**주의사항:**
+- `@provides`로 제공하는 필드는 반드시 `@external`로 선언되어야 합니다
+- 제공하는 필드는 해당 서비스에서 실제로 조회 가능해야 합니다
+- 불필요한 필드를 제공하면 성능에 영향을 줄 수 있습니다
+
+### @external 디렉티브
+
+`@external` 디렉티브는 다른 서비스에서 정의한 필드를 현재 서비스에서 참조할 때 사용합니다. `@requires`나 `@provides`와 함께 사용됩니다.
+
+**사용 규칙:**
+- `@requires`나 `@provides`를 사용할 때는 반드시 `@external`을 함께 사용해야 합니다
+- `@external` 필드는 실제로 현재 서비스에 저장되지 않습니다
+- 다른 서비스에서 제공하는 데이터를 참조하기 위한 선언입니다
+
+**예시:**
+
+```typescript
+// 다른 서비스의 타입을 확장
+extend type Product @key(fields: "id") {
+  id: ID! @external
+  unitPrice: Float! @external
+  # 현재 서비스에서 추가하는 필드
+  inventoryStatus: InventoryStatus!
+}
+```
+
+### Federation 디렉티브 사용 전략
+
+#### 1. 기본 원칙
+
+- **가능하면 `@key`와 DataLoader 패턴 사용**: `@requires`나 `@provides`보다는 ResolveField와 DataLoader를 사용하는 것이 성능상 유리합니다
+- **필요할 때만 사용**: `@requires`와 `@provides`는 성능에 영향을 줄 수 있으므로 신중하게 사용해야 합니다
+- **명확한 의존성 관리**: 서비스 간 의존성을 명확히 문서화하고 관리해야 합니다
+
+#### 2. 사용 가이드라인
+
+**`@key` 사용:**
+- ✅ 모든 Entity 타입에 필수
+- ✅ 서비스 간 참조가 필요한 타입에 필수
+- ✅ 복합 키 사용 가능 (예: `@key(fields: "storeId employeeId date")`)
+
+**`@requires` 사용:**
+- ✅ 필드 레벨 권한 검증이 필요할 때
+- ✅ 계산된 필드가 다른 서비스 데이터에 의존할 때
+- ❌ 단순 조회는 DataLoader 패턴 사용 권장
+
+**`@provides` 사용:**
+- ✅ Query/Mutation에서 다른 서비스 Entity를 반환할 때
+- ✅ 성능 최적화를 위해 필요한 필드를 미리 제공할 때
+- ❌ 모든 필드를 제공할 필요는 없음 (필요한 필드만)
+
+**`@external` 사용:**
+- ✅ `@requires`나 `@provides`와 함께 필수
+- ✅ 다른 서비스의 타입을 확장할 때
+
+#### 3. 현재 프로젝트 적용 계획
+
+**현재 상태:**
+- 모든 주요 Entity에 `@key` 디렉티브 적용 완료
+- DataLoader 패턴으로 서비스 간 조인 구현 (InventoryItem → Product)
+
+**향후 적용 예정:**
+- `@requires`: 필드 레벨 권한 검증이 필요한 경우
+- `@provides`: Order에서 Product 정보를 함께 반환하는 경우
+- `@extends`: Store 서비스가 별도로 구현되면 Employee나 Order에서 Store 정보 확장
+
+#### 4. 성능 고려사항
+
+- **`@requires` 사용 시**: 항상 다른 서비스에 추가 쿼리가 발생하므로 성능에 영향을 줄 수 있습니다
+- **`@provides` 사용 시**: 필요한 필드만 제공하여 불필요한 데이터 전송을 방지합니다
+- **DataLoader 패턴**: 배치 로딩을 통해 N+1 문제를 해결하고 성능을 최적화합니다
+
 ## 서비스별 스키마 정의
 
 ### Attendance 서비스

@@ -85,7 +85,58 @@
 
 ## Registry/Contract Test 절차
 
-### Apollo Rover CLI 사용
+### GraphQL Inspector를 사용한 스키마 검증
+
+프로젝트에는 GraphQL Inspector를 사용한 스키마 검증 스크립트가 포함되어 있습니다.
+
+#### 1. 스키마 유효성 검증
+
+모든 스키마 파일의 문법과 Federation 디렉티브를 검증합니다:
+
+```bash
+npm run schema:validate
+```
+
+이 명령은 다음을 확인합니다:
+- 스키마 문법 유효성
+- Federation 링크 존재 여부
+- `@key` 디렉티브 사용 여부
+- `@requires`, `@provides`, `@external` 디렉티브 사용 여부
+
+#### 2. 스키마 변경사항 감지
+
+두 스키마 파일 간의 변경사항을 분석하고 Breaking Change를 감지합니다:
+
+```bash
+npm run schema:diff -- schemas/attendance.graphql schemas/attendance.new.graphql
+```
+
+Breaking Change가 감지되면:
+- 타입 제거
+- 필드 제거
+- 필수 필드 추가
+- 타입 이름 변경
+
+#### 3. Federation 통합 검증
+
+모든 Subgraph 서비스가 정상적으로 연결되고 Federation 스키마가 올바르게 컴파일되는지 검증합니다:
+
+```bash
+npm run schema:verify
+```
+
+이 명령은 다음을 확인합니다:
+- 각 Subgraph 서비스 헬스 체크
+- 각 Subgraph 스키마 조회
+- Gateway 헬스 체크
+- Federation 통합 스키마 검증
+- Federation 키 타입 확인
+
+**참고**: 이 명령을 실행하려면 모든 서비스가 실행 중이어야 합니다.
+
+### Apollo Rover CLI 사용 (선택사항)
+
+Apollo Studio를 사용하는 경우 Apollo Rover CLI를 사용하여 스키마를 등록할 수 있습니다.
 
 1. **Rover 로그인**
    ```bash
@@ -130,17 +181,18 @@
    rover supergraph compose --config rover-config.yaml
    ```
 
-### GraphQL Inspector 사용
+### CI/CD 통합
 
-1. **스키마 변경 감지**
-   ```bash
-   graphql-inspector diff schema-old.graphql schema-new.graphql
-   ```
+스키마 검증은 CI/CD 파이프라인에 통합되어 있습니다:
 
-2. **Breaking Change 검사**
-   ```bash
-   graphql-inspector validate schema.graphql
-   ```
+```yaml
+# .github/workflows/ci.yml 예시
+- name: Validate GraphQL Schemas
+  run: npm run schema:validate
+
+- name: Verify Federation Integration
+  run: npm run schema:verify
+```
 
 ### Gateway 통합 테스트
 

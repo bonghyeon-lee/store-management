@@ -1,10 +1,8 @@
 schema
-  @link(url: "https://specs.apollo.dev/federation/v2.3", import: [
-    "@key",
-    "@requires",
-    "@provides",
-    "@external"
-  ]) {
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: ["@key", "@requires", "@provides", "@external"]
+  ) {
   query: Query
   mutation: Mutation
 }
@@ -15,7 +13,6 @@ type Product @key(fields: "id") {
   name: String!
   description: String
   unitPrice: Float!
-  "단가"
   category: String
   isActive: Boolean!
   createdAt: String!
@@ -90,12 +87,12 @@ type ReorderRecommendation {
   productName: String!
   currentQuantity: Int!
   reorderPoint: Int!
-  recommendedQuantity: Int!
   "추천 발주 수량"
-  priority: Int!
+  recommendedQuantity: Int!
   "우선순위 (낮을수록 높음)"
-  urgency: String!
+  priority: Int!
   "긴급도 (HIGH, MEDIUM, LOW)"
+  urgency: String!
 }
 
 input CreateSKUInput {
@@ -153,10 +150,7 @@ type Query {
     endDate: String!
   ): [InventoryAudit!]!
   "리오더 추천 목록 조회"
-  reorderRecommendations(
-    storeId: ID
-    sku: ID
-  ): [ReorderRecommendation!]!
+  reorderRecommendations(storeId: ID, sku: ID): [ReorderRecommendation!]!
   "발주 조회"
   purchaseOrder(id: ID!): PurchaseOrder
   "발주 목록 조회"
@@ -211,5 +205,3 @@ type Mutation {
     notes: String
   ): PurchaseOrder!
 }
-
-
