@@ -5,6 +5,10 @@ import {
   ApolloFederationDriverConfig,
 } from '@nestjs/apollo';
 import { AuthResolver } from '../resolvers/auth.resolver';
+import { RoleResolver } from '../resolvers/role.resolver';
+import { PermissionService } from '../services/permission.service';
+import { AuthGuard } from '../guards/auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
 
 @Module({
   imports: [
@@ -16,9 +20,16 @@ import { AuthResolver } from '../resolvers/auth.resolver';
       },
       playground: true,
       sortSchema: true,
+      context: ({ req }: { req: any }) => ({ req }),
     }),
   ],
-  providers: [AuthResolver],
+  providers: [
+    AuthResolver,
+    RoleResolver,
+    PermissionService,
+    AuthGuard,
+    RolesGuard,
+  ],
 })
 export class AppModule {}
 
