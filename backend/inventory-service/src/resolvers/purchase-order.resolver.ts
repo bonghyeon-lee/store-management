@@ -4,6 +4,7 @@ import {
   PurchaseOrderStatus,
 } from '../models/purchase-order.model';
 import { CreatePurchaseOrderInput } from '../models/inputs.model';
+import { inventoryItems, inventoryAudits } from './inventory.resolver';
 
 // 인메모리 데이터 저장소 (MVP 단계)
 const purchaseOrders: Map<string, PurchaseOrder> = new Map();
@@ -151,9 +152,55 @@ export class PurchaseOrderResolver {
 
     purchaseOrders.set(purchaseOrderId, purchaseOrder);
 
-    // 입고 시 재고 자동 업데이트 (InventoryItem 업데이트)
-    // 실제로는 InventoryService를 호출하거나 이벤트를 발행해야 함
-    // MVP 단계에서는 단순히 PurchaseOrder만 업데이트
+    // 입고 시 재고 자동 업데이트
+    const inventoryKey = `${purchaseOrder.storeId}:${purchaseOrder.sku}`;
+    const existingInventory = inventoryItems.get(inventoryKey);
+
+    if (existingInventory) {
+      // 기존 재고에 입고 수량 추가
+      const updatedInventory = {
+        ...existingInventory,
+        quantityOnHand: existingInventory.quantityOnHand + receivedQuantity,
+        updatedAt: now,
+      };
+      inventoryItems.set(inventoryKey, updatedInventory);
+
+      // 재고 실사 이력 기록
+      inventoryAudits.push({
+        id: `AUDIT-${inventoryAudits.length + 1}`,
+        storeId: purchaseOrder.storeId,
+        sku: purchaseOrder.sku,
+        previousQuantity: existingInventory.quantityOnHand,
+        newQuantity: updatedInventory.quantityOnHand,
+        auditDate: now,
+        performedBy: 'SYSTEM', // 입고 처리로 인한 자동 업데이트
+        notes: `입고 처리: 발주 ${purchaseOrderId} (${receivedQuantity}개)`,
+      });
+    } else {
+      // 재고 항목이 없으면 새로 생성
+      const newInventory = {
+        storeId: purchaseOrder.storeId,
+        sku: purchaseOrder.sku,
+        quantityOnHand: receivedQuantity,
+        reserved: 0,
+        reorderPoint: 0,
+        lastAuditAt: now,
+        updatedAt: now,
+      };
+      inventoryItems.set(inventoryKey, newInventory);
+
+      // 재고 실사 이력 기록
+      inventoryAudits.push({
+        id: `AUDIT-${inventoryAudits.length + 1}`,
+        storeId: purchaseOrder.storeId,
+        sku: purchaseOrder.sku,
+        previousQuantity: 0,
+        newQuantity: receivedQuantity,
+        auditDate: now,
+        performedBy: 'SYSTEM',
+        notes: `입고 처리: 발주 ${purchaseOrderId} (${receivedQuantity}개)`,
+      });
+    }
 
     return purchaseOrder;
   }
