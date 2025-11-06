@@ -136,40 +136,44 @@ export class ReportResolver {
       weekDates.map(async (date) => {
         const dayRecords = records.filter((record) => record.date === date);
 
-      const checkedInCount = dayRecords.filter(
-        (record) => record.checkInAt !== null && record.checkInAt !== undefined
-      ).length;
+        const checkedInCount = dayRecords.filter(
+          (record) =>
+            record.checkInAt !== null && record.checkInAt !== undefined
+        ).length;
 
-      const lateCount = dayRecords.filter((record) => {
-        if (!record.checkInAt) return false;
-        const checkInTime = new Date(record.checkInAt);
-        return checkInTime.getHours() >= 9;
-      }).length;
+        const lateCount = dayRecords.filter((record) => {
+          if (!record.checkInAt) return false;
+          const checkInTime = new Date(record.checkInAt);
+          return checkInTime.getHours() >= 9;
+        }).length;
 
-      const absentCount = dayRecords.filter(
-        (record) => record.checkInAt === null || record.checkInAt === undefined
-      ).length;
+        const absentCount = dayRecords.filter(
+          (record) =>
+            record.checkInAt === null || record.checkInAt === undefined
+        ).length;
 
-      const totalEmployees = dayRecords.length || 1;
-      const attendanceRate = checkedInCount / totalEmployees;
+        const totalEmployees = dayRecords.length || 1;
+        const attendanceRate = checkedInCount / totalEmployees;
 
-      const dayEmployeeIds = [...new Set(dayRecords.map((r) => r.employeeId))];
-      const dayEmployees = await this.employeeRepository.find({
-        where: dayEmployeeIds.map((id) => ({ id })),
-      });
-      const dayEmployeeMap = new Map(dayEmployees.map((e) => [e.id, e]));
+        const dayEmployeeIds = [
+          ...new Set(dayRecords.map((r) => r.employeeId)),
+        ];
+        const dayEmployees = await this.employeeRepository.find({
+          where: dayEmployeeIds.map((id) => ({ id })),
+        });
+        const dayEmployeeMap = new Map(dayEmployees.map((e) => [e.id, e]));
 
-      const employeeStats = dayRecords.map((record) => {
-        const employee = dayEmployeeMap.get(record.employeeId);
-        return {
-          employeeId: record.employeeId,
-          employeeName: employee?.name || `직원-${record.employeeId}`,
-          checkInAt: record.checkInAt?.toISOString(),
-          checkOutAt: record.checkOutAt?.toISOString(),
-          workingHours: record.workingHours ? Number(record.workingHours) : 0,
-          status: record.status,
-        };
-      });
+        const employeeStats = dayRecords.map((record) => {
+          const employee = dayEmployeeMap.get(record.employeeId);
+          return {
+            employeeId: record.employeeId,
+            employeeName: employee?.name || `직원-${record.employeeId}`,
+            checkInAt: record.checkInAt?.toISOString(),
+            checkOutAt: record.checkOutAt?.toISOString(),
+            workingHours: record.workingHours ? Number(record.workingHours) : 0,
+            status: record.status,
+          };
+        });
 
         return {
           date,
@@ -184,7 +188,8 @@ export class ReportResolver {
 
     // 주간 집계
     const totalWorkingHours = records.reduce(
-      (sum, record) => sum + (record.workingHours ? Number(record.workingHours) : 0),
+      (sum, record) =>
+        sum + (record.workingHours ? Number(record.workingHours) : 0),
       0
     );
 
