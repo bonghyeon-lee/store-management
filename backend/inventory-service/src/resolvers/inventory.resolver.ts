@@ -21,8 +21,8 @@ import {
 import { Product } from '../models/product.model';
 
 // 인메모리 데이터 저장소 (MVP 단계)
-const inventoryItems: Map<string, InventoryItem> = new Map();
-const inventoryAudits: InventoryAudit[] = [];
+export const inventoryItems: Map<string, InventoryItem> = new Map();
+export const inventoryAudits: InventoryAudit[] = [];
 
 // Product 데이터 (product.resolver.ts와 공유)
 // 실제로는 별도 서비스나 모듈에서 가져와야 하지만, MVP 단계에서는 인메모리 사용
@@ -218,10 +218,14 @@ export class InventoryResolver {
         urgency = 'LOW';
       }
 
+      // 실제 Product 이름 가져오기
+      const product = products.get(item.sku);
+      const productName = product?.name || `상품-${item.sku}`;
+
       return {
         storeId: item.storeId,
         sku: item.sku,
-        productName: `상품-${item.sku}`,
+        productName,
         currentQuantity: item.quantityOnHand,
         reorderPoint: item.reorderPoint,
         recommendedQuantity,
