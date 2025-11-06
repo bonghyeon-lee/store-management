@@ -4,8 +4,27 @@ import { AttendanceResolver } from './attendance.resolver';
 import { EmployeeResolver } from './employee.resolver';
 import { AttendanceStatus } from '../models/attendance.model';
 import { CheckInInput, CheckOutInput } from '../models/inputs.model';
-import { attendanceRecords } from './attendance.resolver';
-import { employees } from './employee.resolver';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AttendanceEntity } from '../entities/attendance.entity';
+import { EmployeeEntity } from '../entities/employee.entity';
+
+// TypeORM Mock Repository
+const mockAttendanceRepository = {
+  createQueryBuilder: jest.fn(),
+  find: jest.fn(),
+  findOne: jest.fn(),
+  save: jest.fn(),
+  delete: jest.fn(),
+};
+
+const mockEmployeeRepository = {
+  createQueryBuilder: jest.fn(),
+  find: jest.fn(),
+  findOne: jest.fn(),
+  save: jest.fn(),
+  delete: jest.fn(),
+};
 
 describe('ReportResolver', () => {
   let resolver: ReportResolver;
@@ -13,39 +32,26 @@ describe('ReportResolver', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ReportResolver, AttendanceResolver, EmployeeResolver],
+      providers: [
+        ReportResolver,
+        AttendanceResolver,
+        EmployeeResolver,
+        {
+          provide: getRepositoryToken(AttendanceEntity),
+          useValue: mockAttendanceRepository,
+        },
+        {
+          provide: getRepositoryToken(EmployeeEntity),
+          useValue: mockEmployeeRepository,
+        },
+      ],
     }).compile();
 
     resolver = module.get<ReportResolver>(ReportResolver);
     attendanceResolver = module.get<AttendanceResolver>(AttendanceResolver);
 
-    // 테스트 데이터 초기화
-    attendanceRecords.clear();
-
-    // 샘플 직원 데이터 설정
-    employees.set('EMP-001', {
-      id: 'EMP-001',
-      name: '홍길동',
-      email: 'hong@example.com',
-      phone: '010-1234-5678',
-      role: 'EMPLOYEE',
-      employmentStatus: 'ACTIVE' as any,
-      assignedStoreIds: ['STORE-001'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-
-    employees.set('EMP-002', {
-      id: 'EMP-002',
-      name: '김철수',
-      email: 'kim@example.com',
-      phone: '010-2345-6789',
-      role: 'EMPLOYEE',
-      employmentStatus: 'ACTIVE' as any,
-      assignedStoreIds: ['STORE-001'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    // Mock 초기화
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {

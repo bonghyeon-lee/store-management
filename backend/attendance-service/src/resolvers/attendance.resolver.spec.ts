@@ -2,19 +2,35 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceResolver } from './attendance.resolver';
 import { AttendanceStatus } from '../models/attendance.model';
 import { CheckInInput, CheckOutInput } from '../models/inputs.model';
-import { attendanceRecords } from './attendance.resolver';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { AttendanceEntity } from '../entities/attendance.entity';
+
+// TypeORM Mock Repository
+const mockAttendanceRepository = {
+  createQueryBuilder: jest.fn(),
+  find: jest.fn(),
+  findOne: jest.fn(),
+  save: jest.fn(),
+  delete: jest.fn(),
+};
 
 describe('AttendanceResolver', () => {
   let resolver: AttendanceResolver;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AttendanceResolver],
+      providers: [
+        AttendanceResolver,
+        {
+          provide: getRepositoryToken(AttendanceEntity),
+          useValue: mockAttendanceRepository,
+        },
+      ],
     }).compile();
 
     resolver = module.get<AttendanceResolver>(AttendanceResolver);
-    // 각 테스트 전에 데이터 초기화
-    attendanceRecords.clear();
+    // Mock 초기화
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {

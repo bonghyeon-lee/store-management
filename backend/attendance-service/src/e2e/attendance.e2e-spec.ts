@@ -5,10 +5,28 @@ import { ApolloFederationDriver, ApolloFederationDriverConfig } from '@nestjs/ap
 import { EmployeeResolver } from '../resolvers/employee.resolver';
 import { AttendanceResolver } from '../resolvers/attendance.resolver';
 import { ReportResolver } from '../resolvers/report.resolver';
-import { employees } from '../resolvers/employee.resolver';
-import { attendanceRecords } from '../resolvers/attendance.resolver';
 import { EmploymentStatus } from '../models/employee.model';
 import { AttendanceStatus } from '../models/attendance.model';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { AttendanceEntity } from '../entities/attendance.entity';
+import { EmployeeEntity } from '../entities/employee.entity';
+
+// TypeORM Mock Repository
+const mockAttendanceRepository = {
+  createQueryBuilder: jest.fn(),
+  find: jest.fn(),
+  findOne: jest.fn(),
+  save: jest.fn(),
+  delete: jest.fn(),
+};
+
+const mockEmployeeRepository = {
+  createQueryBuilder: jest.fn(),
+  find: jest.fn(),
+  findOne: jest.fn(),
+  save: jest.fn(),
+  delete: jest.fn(),
+};
 
 describe('Attendance Service E2E Tests', () => {
   let app: INestApplication;
@@ -25,7 +43,19 @@ describe('Attendance Service E2E Tests', () => {
           sortSchema: true,
         }),
       ],
-      providers: [EmployeeResolver, AttendanceResolver, ReportResolver],
+      providers: [
+        EmployeeResolver,
+        AttendanceResolver,
+        ReportResolver,
+        {
+          provide: getRepositoryToken(EmployeeEntity),
+          useValue: mockEmployeeRepository,
+        },
+        {
+          provide: getRepositoryToken(AttendanceEntity),
+          useValue: mockAttendanceRepository,
+        },
+      ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -41,9 +71,8 @@ describe('Attendance Service E2E Tests', () => {
   });
 
   beforeEach(() => {
-    // 각 테스트 전에 데이터 초기화
-    employees.clear();
-    attendanceRecords.clear();
+    // Mock 초기화
+    jest.clearAllMocks();
   });
 
   describe('Complete E2E Workflow', () => {

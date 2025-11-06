@@ -62,10 +62,6 @@ export class ReportResolver {
 
     const records = await queryBuilder.getMany();
 
-    if (storeId) {
-      filtered = filtered.filter((record) => record.storeId === storeId);
-    }
-
     // 출근한 직원 수
     const checkedInCount = records.filter(
       (record) => record.checkInAt !== null && record.checkInAt !== undefined
