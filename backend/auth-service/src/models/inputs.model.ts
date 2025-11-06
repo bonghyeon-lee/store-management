@@ -28,3 +28,12 @@ export class LoginInput {
   password!: string;
 }
 
+@InputType()
+export class AssignRoleInput {
+  @Field(() => String)
+  userId!: string;
+
+  @Field(() => String)
+  roleId!: string;
+}
+

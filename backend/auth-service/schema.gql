@@ -1,0 +1,109 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""인증 토큰"""
+type AuthToken {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  """사용자에게 역할 할당"""
+  assignRole(roleId: ID!, userId: ID!): User!
+
+  """로그인"""
+  login(input: LoginInput!): AuthToken!
+
+  """로그아웃"""
+  logout(refreshToken: String): Boolean!
+
+  """토큰 갱신"""
+  refreshToken(refreshToken: String!): AuthToken!
+
+  """사용자 등록"""
+  registerUser(input: RegisterUserInput!): User!
+
+  """사용자 역할 제거"""
+  removeRole(roleId: ID!, userId: ID!): User!
+}
+
+enum Permission {
+  APPROVE_ATTENDANCE
+  APPROVE_PURCHASE_ORDER
+  MANAGE_ATTENDANCE
+  MANAGE_EMPLOYEES
+  MANAGE_INVENTORY
+  MANAGE_POLICIES
+  MANAGE_SALES
+  VIEW_ALL_STORES
+  VIEW_ATTENDANCE
+  VIEW_EMPLOYEES
+  VIEW_INVENTORY
+  VIEW_SALES
+  VIEW_SALES_REPORT
+}
+
+type Query {
+  """현재 사용자 정보 조회"""
+  currentUser: User
+
+  """역할 조회"""
+  role(id: ID!): Role
+
+  """역할 목록 조회"""
+  roles: [Role!]!
+
+  """사용자 조회"""
+  user(id: ID!): User
+
+  """사용자 권한 목록 조회"""
+  userPermissions(userId: ID!): [Permission!]!
+
+  """사용자 역할 조회"""
+  userRoles(userId: ID!): [Role!]!
+
+  """사용자 목록 조회"""
+  users(role: UserRole, storeId: ID): [User!]!
+}
+
+input RegisterUserInput {
+  email: String!
+  name: String!
+  password: String!
+  role: UserRole!
+  storeId: String
+}
+
+"""역할"""
+type Role {
+  createdAt: String!
+  description: String!
+  id: ID!
+  name: String!
+  permissions: [Permission!]!
+  updatedAt: String
+}
+
+"""사용자"""
+type User {
+  createdAt: String!
+  email: String!
+  id: ID!
+  lastLoginAt: String
+  name: String!
+  role: UserRole!
+  storeId: ID
+}
+
+enum UserRole {
+  EMPLOYEE
+  HQ_ADMIN
+  STORE_MANAGER
+}
