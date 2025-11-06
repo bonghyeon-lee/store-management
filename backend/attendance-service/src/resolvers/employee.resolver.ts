@@ -1,74 +1,55 @@
 import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Employee, EmploymentStatus } from '../models/employee.model';
 import {
   CreateEmployeeInput,
   UpdateEmployeeInput,
 } from '../models/inputs.model';
-
-// 인메모리 데이터 저장소 (MVP 단계)
-export const employees: Map<string, Employee> = new Map();
-
-// 초기 샘플 데이터
-const initializeSampleData = () => {
-  const now = new Date().toISOString();
-  employees.set('EMP-001', {
-    id: 'EMP-001',
-    name: '홍길동',
-    email: 'hong@example.com',
-    phone: '010-1234-5678',
-    role: 'STORE_MANAGER',
-    employmentStatus: EmploymentStatus.ACTIVE,
-    assignedStoreIds: ['STORE-001'],
-    createdAt: now,
-    updatedAt: now,
-  });
-  employees.set('EMP-002', {
-    id: 'EMP-002',
-    name: '김철수',
-    email: 'kim@example.com',
-    phone: '010-2345-6789',
-    role: 'EMPLOYEE',
-    employmentStatus: EmploymentStatus.ACTIVE,
-    assignedStoreIds: ['STORE-001'],
-    createdAt: now,
-    updatedAt: now,
-  });
-};
-
-initializeSampleData();
+import { EmployeeEntity } from '../entities/employee.entity';
 
 @Resolver(() => Employee)
 export class EmployeeResolver {
+  constructor(
+    @InjectRepository(EmployeeEntity)
+    private employeeRepository: Repository<EmployeeEntity>
+  ) {}
+
   @Query(() => Employee, { nullable: true, description: '직원 조회' })
-  employee(@Args('id', { type: () => ID }) id: string): Employee | null {
-    return employees.get(id) || null;
+  async employee(@Args('id', { type: () => ID }) id: string): Promise<Employee | null> {
+    const entity = await this.employeeRepository.findOne({ where: { id } });
+    if (!entity) return null;
+    return this.mapEntityToModel(entity);
   }
 
   @Query(() => [Employee], { description: '직원 목록 조회' })
-  employees(
+  async employees(
     @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
     @Args('role', { nullable: true }) role?: string,
     @Args('status', { type: () => EmploymentStatus, nullable: true })
     status?: EmploymentStatus
-  ): Employee[] {
-    let result = Array.from(employees.values());
+  ): Promise<Employee[]> {
+    const queryBuilder = this.employeeRepository.createQueryBuilder('employee');
 
     // 필터링
     if (storeId) {
-      result = result.filter((emp) => emp.assignedStoreIds.includes(storeId));
+      queryBuilder.andWhere("employee.assignedStoreIds LIKE :storeId", {
+        storeId: `%${storeId}%`,
+      });
     }
     if (role) {
-      result = result.filter((emp) => emp.role === role);
+      queryBuilder.andWhere('employee.role = :role', { role });
     }
     if (status) {
-      result = result.filter((emp) => emp.employmentStatus === status);
+      queryBuilder.andWhere('employee.employmentStatus = :status', { status });
     }
 
-    return result;
+    const entities = await queryBuilder.getMany();
+    return entities.map((entity) => this.mapEntityToModel(entity));
   }
 
   @Mutation(() => Employee, { description: '직원 생성' })
-  createEmployee(@Args('input') input: CreateEmployeeInput): Employee {
+  async createEmployee(@Args('input') input: CreateEmployeeInput): Promise<Employee> {
     // 입력 값 검증
     if (!input.name || input.name.trim().length === 0) {
       throw new Error('이름은 필수 입력 항목입니다.');
@@ -98,32 +79,26 @@ export class EmployeeResolver {
       }
     }
 
-    const id = `EMP-${String(employees.size + 1).padStart(3, '0')}`;
-    const now = new Date().toISOString();
-
-    const employee: Employee = {
-      id,
+    const entity = this.employeeRepository.create({
       name: input.name.trim(),
       email: input.email?.trim(),
       phone: input.phone?.trim(),
       role: input.role.trim(),
       employmentStatus: EmploymentStatus.ACTIVE,
       assignedStoreIds: input.assignedStoreIds,
-      createdAt: now,
-      updatedAt: now,
-    };
+    });
 
-    employees.set(id, employee);
-    return employee;
+    const saved = await this.employeeRepository.save(entity);
+    return this.mapEntityToModel(saved);
   }
 
   @Mutation(() => Employee, { description: '직원 정보 수정' })
-  updateEmployee(
+  async updateEmployee(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateEmployeeInput
-  ): Employee {
-    const employee = employees.get(id);
-    if (!employee) {
+  ): Promise<Employee> {
+    const entity = await this.employeeRepository.findOne({ where: { id } });
+    if (!entity) {
       throw new Error(`직원을 찾을 수 없습니다: ${id}`);
     }
 
@@ -159,40 +134,45 @@ export class EmployeeResolver {
       }
     }
 
-    const updated: Employee = {
-      ...employee,
-      ...(input.name && { name: input.name.trim() }),
-      ...(input.email !== undefined && {
-        email: input.email ? input.email.trim() : undefined,
-      }),
-      ...(input.phone !== undefined && {
-        phone: input.phone ? input.phone.trim() : undefined,
-      }),
-      ...(input.role && { role: input.role.trim() }),
-      ...(input.employmentStatus && {
-        employmentStatus: input.employmentStatus,
-      }),
-      ...(input.assignedStoreIds && {
-        assignedStoreIds: input.assignedStoreIds,
-      }),
-      updatedAt: new Date().toISOString(),
-    };
+    // 업데이트
+    if (input.name !== undefined) entity.name = input.name.trim();
+    if (input.email !== undefined) entity.email = input.email?.trim();
+    if (input.phone !== undefined) entity.phone = input.phone?.trim();
+    if (input.role !== undefined) entity.role = input.role.trim();
+    if (input.employmentStatus !== undefined)
+      entity.employmentStatus = input.employmentStatus;
+    if (input.assignedStoreIds !== undefined)
+      entity.assignedStoreIds = input.assignedStoreIds;
 
-    employees.set(id, updated);
-    return updated;
+    const updated = await this.employeeRepository.save(entity);
+    return this.mapEntityToModel(updated);
   }
 
   @Mutation(() => Boolean, { description: '직원 삭제/비활성화' })
-  deleteEmployee(@Args('id', { type: () => ID }) id: string): boolean {
-    const employee = employees.get(id);
-    if (!employee) {
+  async deleteEmployee(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
+    const entity = await this.employeeRepository.findOne({ where: { id } });
+    if (!entity) {
       return false;
     }
 
     // 실제 삭제 대신 비활성화
-    employee.employmentStatus = EmploymentStatus.INACTIVE;
-    employee.updatedAt = new Date().toISOString();
-    employees.set(id, employee);
+    entity.employmentStatus = EmploymentStatus.INACTIVE;
+    await this.employeeRepository.save(entity);
     return true;
+  }
+
+  // 엔티티를 GraphQL 모델로 변환
+  private mapEntityToModel(entity: EmployeeEntity): Employee {
+    return {
+      id: entity.id,
+      name: entity.name,
+      email: entity.email,
+      phone: entity.phone,
+      role: entity.role,
+      employmentStatus: entity.employmentStatus,
+      assignedStoreIds: entity.assignedStoreIds,
+      createdAt: entity.createdAt.toISOString(),
+      updatedAt: entity.updatedAt.toISOString(),
+    };
   }
 }
