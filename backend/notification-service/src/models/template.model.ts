@@ -1,4 +1,5 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { NotificationType } from './notification.model';
 
 @ObjectType({ description: '알림 템플릿' })
 export class NotificationTemplate {
@@ -14,8 +15,8 @@ export class NotificationTemplate {
   @Field()
   content!: string;
 
-  @Field()
-  type!: string;
+  @Field(() => NotificationType)
+  type!: NotificationType;
 
   @Field()
   createdAt!: string;
@@ -23,5 +24,3 @@ export class NotificationTemplate {
   @Field()
   updatedAt!: string;
 }
-
-

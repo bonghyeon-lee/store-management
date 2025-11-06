@@ -4,48 +4,48 @@ import { AttendanceResolver } from './attendance.resolver';
 import { EmployeeResolver } from './employee.resolver';
 import { AttendanceStatus } from '../models/attendance.model';
 import { CheckInInput, CheckOutInput } from '../models/inputs.model';
-import { attendanceRecords } from './attendance.resolver';
-import { employees } from './employee.resolver';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { AttendanceEntity } from '../entities/attendance.entity';
+import { EmployeeEntity } from '../entities/employee.entity';
+import {
+  createMockRepository,
+  createMockQueryBuilder,
+  setupQueryBuilderMock,
+} from '../test-utils/typeorm-mock';
+import { Repository, SelectQueryBuilder } from 'typeorm';
+import { EmploymentStatus } from '../models/employee.model';
 
 describe('ReportResolver', () => {
   let resolver: ReportResolver;
-  let attendanceResolver: AttendanceResolver;
+  let mockAttendanceRepository: Repository<AttendanceEntity>;
+  let mockEmployeeRepository: Repository<EmployeeEntity>;
+  let mockAttendanceQueryBuilder: SelectQueryBuilder<AttendanceEntity>;
+  let mockEmployeeQueryBuilder: SelectQueryBuilder<EmployeeEntity>;
 
   beforeEach(async () => {
+    mockAttendanceRepository = createMockRepository<AttendanceEntity>();
+    mockEmployeeRepository = createMockRepository<EmployeeEntity>();
+    mockAttendanceQueryBuilder = createMockQueryBuilder<AttendanceEntity>();
+    mockEmployeeQueryBuilder = createMockQueryBuilder<EmployeeEntity>();
+    setupQueryBuilderMock(mockAttendanceRepository, mockAttendanceQueryBuilder);
+    setupQueryBuilderMock(mockEmployeeRepository, mockEmployeeQueryBuilder);
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ReportResolver, AttendanceResolver, EmployeeResolver],
+      providers: [
+        ReportResolver,
+        {
+          provide: getRepositoryToken(AttendanceEntity),
+          useValue: mockAttendanceRepository,
+        },
+        {
+          provide: getRepositoryToken(EmployeeEntity),
+          useValue: mockEmployeeRepository,
+        },
+      ],
     }).compile();
 
     resolver = module.get<ReportResolver>(ReportResolver);
-    attendanceResolver = module.get<AttendanceResolver>(AttendanceResolver);
-
-    // 테스트 데이터 초기화
-    attendanceRecords.clear();
-
-    // 샘플 직원 데이터 설정
-    employees.set('EMP-001', {
-      id: 'EMP-001',
-      name: '홍길동',
-      email: 'hong@example.com',
-      phone: '010-1234-5678',
-      role: 'EMPLOYEE',
-      employmentStatus: 'ACTIVE' as any,
-      assignedStoreIds: ['STORE-001'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-
-    employees.set('EMP-002', {
-      id: 'EMP-002',
-      name: '김철수',
-      email: 'kim@example.com',
-      phone: '010-2345-6789',
-      role: 'EMPLOYEE',
-      employmentStatus: 'ACTIVE' as any,
-      assignedStoreIds: ['STORE-001'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -53,102 +53,202 @@ describe('ReportResolver', () => {
   });
 
   describe('dailyAttendanceReport', () => {
-    it('should generate daily report with correct statistics', () => {
+    it('should generate daily report with correct statistics', async () => {
       const date = '2024-01-01';
+      const storeId = 'STORE-001';
 
-      // 출근 기록 생성
-      attendanceResolver.checkIn({
-        storeId: 'STORE-001',
-        employeeId: 'EMP-001',
-        date,
-        checkInAt: `${date}T09:00:00`,
-      });
+      const mockAttendanceRecords = [
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-001',
+          date: '2024-01-01',
+          checkInAt: new Date('2024-01-01T09:00:00'),
+          checkOutAt: new Date('2024-01-01T18:00:00'),
+          workingHours: 9,
+          status: AttendanceStatus.PENDING,
+        },
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-002',
+          date: '2024-01-01',
+          checkInAt: new Date('2024-01-01T08:30:00'),
+          checkOutAt: new Date('2024-01-01T17:30:00'),
+          workingHours: 9,
+          status: AttendanceStatus.PENDING,
+        },
+      ] as AttendanceEntity[];
 
-      attendanceResolver.checkIn({
-        storeId: 'STORE-001',
-        employeeId: 'EMP-002',
-        date,
-        checkInAt: `${date}T08:30:00`,
-      });
+      const mockEmployees = [
+        {
+          id: 'EMP-001',
+          name: '홍길동',
+          role: 'EMPLOYEE',
+          employmentStatus: EmploymentStatus.ACTIVE,
+          assignedStoreIds: ['STORE-001'],
+        },
+        {
+          id: 'EMP-002',
+          name: '김철수',
+          role: 'EMPLOYEE',
+          employmentStatus: EmploymentStatus.ACTIVE,
+          assignedStoreIds: ['STORE-001'],
+        },
+      ] as EmployeeEntity[];
 
-      // 퇴근 기록
-      attendanceResolver.checkOut({
-        storeId: 'STORE-001',
-        employeeId: 'EMP-001',
-        date,
-        checkOutAt: `${date}T18:00:00`,
-      });
+      (mockAttendanceQueryBuilder.where as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.andWhere as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.getMany as jest.Mock).mockResolvedValue(
+        mockAttendanceRecords,
+      );
+      (mockEmployeeRepository.find as jest.Mock).mockResolvedValue(mockEmployees);
 
-      const result = resolver.dailyAttendanceReport(date, 'STORE-001');
+      const result = await resolver.dailyAttendanceReport(date, storeId);
 
       expect(result.date).toBe(date);
-      expect(result.storeId).toBe('STORE-001');
+      expect(result.storeId).toBe(storeId);
       expect(result.attendanceRate).toBeGreaterThan(0);
       expect(result.employeeStats.length).toBe(2);
       expect(result.employeeStats[0].employeeName).toBe('홍길동');
       expect(result.employeeStats[1].employeeName).toBe('김철수');
+      expect(mockAttendanceQueryBuilder.where).toHaveBeenCalledWith(
+        'attendance.date = :date',
+        { date },
+      );
+      expect(mockAttendanceQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'attendance.storeId = :storeId',
+        { storeId },
+      );
     });
 
-    it('should calculate late count correctly', () => {
+    it('should calculate late count correctly', async () => {
       const date = '2024-01-01';
+      const storeId = 'STORE-001';
 
-      // 9시 이후 출근 (지각)
-      attendanceResolver.checkIn({
-        storeId: 'STORE-001',
-        employeeId: 'EMP-001',
-        date,
-        checkInAt: `${date}T09:30:00`,
-      });
+      const mockAttendanceRecords = [
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-001',
+          date: '2024-01-01',
+          checkInAt: new Date('2024-01-01T09:30:00'), // 지각
+          status: AttendanceStatus.PENDING,
+        },
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-002',
+          date: '2024-01-01',
+          checkInAt: new Date('2024-01-01T08:30:00'), // 정상
+          status: AttendanceStatus.PENDING,
+        },
+      ] as AttendanceEntity[];
 
-      // 8시 30분 출근 (정상)
-      attendanceResolver.checkIn({
-        storeId: 'STORE-001',
-        employeeId: 'EMP-002',
-        date,
-        checkInAt: `${date}T08:30:00`,
-      });
+      const mockEmployees = [
+        {
+          id: 'EMP-001',
+          name: '홍길동',
+        },
+        {
+          id: 'EMP-002',
+          name: '김철수',
+        },
+      ] as EmployeeEntity[];
 
-      const result = resolver.dailyAttendanceReport(date, 'STORE-001');
+      (mockAttendanceQueryBuilder.where as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.andWhere as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.getMany as jest.Mock).mockResolvedValue(
+        mockAttendanceRecords,
+      );
+      (mockEmployeeRepository.find as jest.Mock).mockResolvedValue(mockEmployees);
+
+      const result = await resolver.dailyAttendanceReport(date, storeId);
 
       expect(result.lateCount).toBe(1);
     });
 
-    it('should calculate absent count correctly', () => {
+    it('should calculate absent count correctly', async () => {
       const date = '2024-01-01';
+      const storeId = 'STORE-001';
 
-      // 출근 기록이 없는 경우
-      const result = resolver.dailyAttendanceReport(date, 'STORE-001');
+      const mockAttendanceRecords = [
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-001',
+          date: '2024-01-01',
+          checkInAt: null, // 결근
+          status: AttendanceStatus.PENDING,
+        },
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-002',
+          date: '2024-01-01',
+          checkInAt: new Date('2024-01-01T09:00:00'),
+          status: AttendanceStatus.PENDING,
+        },
+      ] as AttendanceEntity[];
 
-      expect(result.absentCount).toBeGreaterThanOrEqual(0);
+      const mockEmployees = [
+        {
+          id: 'EMP-001',
+          name: '홍길동',
+        },
+        {
+          id: 'EMP-002',
+          name: '김철수',
+        },
+      ] as EmployeeEntity[];
+
+      (mockAttendanceQueryBuilder.where as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.andWhere as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.getMany as jest.Mock).mockResolvedValue(
+        mockAttendanceRecords,
+      );
+      (mockEmployeeRepository.find as jest.Mock).mockResolvedValue(mockEmployees);
+
+      const result = await resolver.dailyAttendanceReport(date, storeId);
+
+      expect(result.absentCount).toBe(1);
     });
   });
 
   describe('weeklyAttendanceReport', () => {
-    it('should generate weekly report', () => {
+    it('should generate weekly report', async () => {
       const weekStart = '2024-01-01'; // 월요일
 
-      // 월요일부터 금요일까지 출근 기록 생성
-      for (let i = 0; i < 5; i++) {
-        const date = new Date(weekStart);
-        date.setDate(date.getDate() + i);
-        const dateStr = date.toISOString().split('T')[0];
-
-        attendanceResolver.checkIn({
+      const mockAttendanceRecords = [
+        {
           storeId: 'STORE-001',
           employeeId: 'EMP-001',
-          date: dateStr,
-          checkInAt: `${dateStr}T09:00:00`,
-        });
-
-        attendanceResolver.checkOut({
+          date: '2024-01-01',
+          checkInAt: new Date('2024-01-01T09:00:00'),
+          checkOutAt: new Date('2024-01-01T18:00:00'),
+          workingHours: 9,
+          status: AttendanceStatus.PENDING,
+        },
+        {
           storeId: 'STORE-001',
           employeeId: 'EMP-001',
-          date: dateStr,
-          checkOutAt: `${dateStr}T18:00:00`,
-        });
-      }
+          date: '2024-01-02',
+          checkInAt: new Date('2024-01-02T09:00:00'),
+          checkOutAt: new Date('2024-01-02T18:00:00'),
+          workingHours: 9,
+          status: AttendanceStatus.PENDING,
+        },
+      ] as AttendanceEntity[];
 
-      const result = resolver.weeklyAttendanceReport(weekStart, 'STORE-001');
+      const mockEmployees = [
+        {
+          id: 'EMP-001',
+          name: '홍길동',
+        },
+      ] as EmployeeEntity[];
+
+      (mockAttendanceQueryBuilder.where as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.andWhere as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.getMany as jest.Mock).mockResolvedValue(
+        mockAttendanceRecords,
+      );
+      (mockEmployeeRepository.find as jest.Mock).mockResolvedValue(mockEmployees);
+
+      const result = await resolver.weeklyAttendanceReport(weekStart, 'STORE-001');
 
       expect(result.weekStart).toBe(weekStart);
       expect(result.storeId).toBe('STORE-001');
@@ -157,29 +257,54 @@ describe('ReportResolver', () => {
       expect(result.averageWorkingHours).toBeGreaterThan(0);
     });
 
-    it('should calculate weekly attendance rate', () => {
+    it('should calculate weekly attendance rate', async () => {
       const weekStart = '2024-01-01';
 
-      // 3일만 출근
-      for (let i = 0; i < 3; i++) {
-        const date = new Date(weekStart);
-        date.setDate(date.getDate() + i);
-        const dateStr = date.toISOString().split('T')[0];
-
-        attendanceResolver.checkIn({
+      const mockAttendanceRecords = [
+        {
           storeId: 'STORE-001',
           employeeId: 'EMP-001',
-          date: dateStr,
-          checkInAt: `${dateStr}T09:00:00`,
-        });
-      }
+          date: '2024-01-01',
+          checkInAt: new Date('2024-01-01T09:00:00'),
+          workingHours: 8,
+          status: AttendanceStatus.PENDING,
+        },
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-001',
+          date: '2024-01-02',
+          checkInAt: new Date('2024-01-02T09:00:00'),
+          workingHours: 8,
+          status: AttendanceStatus.PENDING,
+        },
+        {
+          storeId: 'STORE-001',
+          employeeId: 'EMP-001',
+          date: '2024-01-03',
+          checkInAt: new Date('2024-01-03T09:00:00'),
+          workingHours: 8,
+          status: AttendanceStatus.PENDING,
+        },
+      ] as AttendanceEntity[];
 
-      const result = resolver.weeklyAttendanceReport(weekStart, 'STORE-001');
+      const mockEmployees = [
+        {
+          id: 'EMP-001',
+          name: '홍길동',
+        },
+      ] as EmployeeEntity[];
+
+      (mockAttendanceQueryBuilder.where as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.andWhere as jest.Mock).mockReturnThis();
+      (mockAttendanceQueryBuilder.getMany as jest.Mock).mockResolvedValue(
+        mockAttendanceRecords,
+      );
+      (mockEmployeeRepository.find as jest.Mock).mockResolvedValue(mockEmployees);
+
+      const result = await resolver.weeklyAttendanceReport(weekStart, 'STORE-001');
 
       expect(result.attendanceRate).toBeGreaterThan(0);
       expect(result.attendanceRate).toBeLessThanOrEqual(1);
     });
   });
 });
-
-

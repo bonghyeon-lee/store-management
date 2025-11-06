@@ -1,28 +1,22 @@
 import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
-import { Notification, NotificationStatus, NotificationType } from '../models/notification.model';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import {
+  Notification,
+  NotificationStatus,
+  NotificationType,
+} from '../models/notification.model';
 import { NotificationTemplate } from '../models/template.model';
 import { SendNotificationInput } from '../models/inputs.model';
-import * as nodemailer from 'nodemailer';
-
-// 인메모리 데이터 저장소 (MVP 단계)
-export const notifications: Map<string, Notification> = new Map();
-export const templates: Map<string, NotificationTemplate> = new Map();
-let notificationIdCounter = 1;
-let templateIdCounter = 1;
-
-// 이메일 전송 설정 (MVP 단계, 프로덕션에서는 환경 변수로 관리)
-const emailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-  },
-});
+import { NotificationEntity } from '../entities/notification.entity';
+import { NotificationTemplateEntity } from '../entities/template.entity';
+import { EmailService } from '../services/email.service';
 
 // 템플릿 변수 치환 함수
-const replaceTemplateVariables = (template: string, variables: Record<string, string>): string => {
+const replaceTemplateVariables = (
+  template: string,
+  variables: Record<string, string>,
+): string => {
   let result = template;
   for (const [key, value] of Object.entries(variables)) {
     result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
@@ -30,91 +24,127 @@ const replaceTemplateVariables = (template: string, variables: Record<string, st
   return result;
 };
 
-// 초기 샘플 템플릿 데이터
-const initializeSampleTemplates = () => {
-  const now = new Date().toISOString();
-  
-  templates.set('TEMPLATE-001', {
-    id: 'TEMPLATE-001',
-    name: '무단결근 알림',
-    subject: '[{storeName}] 무단결근 알림',
-    content: '{employeeName}님의 {date} 무단결근이 감지되었습니다.',
-    type: 'EMAIL',
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  templates.set('TEMPLATE-002', {
-    id: 'TEMPLATE-002',
-    name: '재고 부족 알림',
-    subject: '[{storeName}] 재고 부족 알림',
-    content: '{productName}의 재고가 {currentQuantity}개로 안전재고({reorderPoint}개) 이하로 떨어졌습니다.',
-    type: 'EMAIL',
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  templates.set('TEMPLATE-003', {
-    id: 'TEMPLATE-003',
-    name: '매출 급감 알림',
-    subject: '[{storeName}] 매출 급감 알림',
-    content: '{storeName}의 {date} 매출이 {amount}원으로 전일 대비 {percentage}% 감소했습니다.',
-    type: 'EMAIL',
-    createdAt: now,
-    updatedAt: now,
-  });
-};
-
-initializeSampleTemplates();
-
 @Resolver(() => Notification)
 export class NotificationResolver {
+  constructor(
+    @InjectRepository(NotificationEntity)
+    private notificationRepository: Repository<NotificationEntity>,
+    @InjectRepository(NotificationTemplateEntity)
+    private templateRepository: Repository<NotificationTemplateEntity>,
+    private emailService: EmailService,
+  ) {
+    // 초기 샘플 템플릿 데이터 생성
+    this.initializeSampleTemplates();
+  }
+
+  private async initializeSampleTemplates(): Promise<void> {
+    const existingTemplates = await this.templateRepository.count();
+    if (existingTemplates > 0) {
+      return; // 이미 템플릿이 있으면 스킵
+    }
+
+    const sampleTemplates = [
+      {
+        name: '무단결근 알림',
+        subject: '[{storeName}] 무단결근 알림',
+        content:
+          '{employeeName}님의 {date} 무단결근이 감지되었습니다.',
+        type: NotificationType.EMAIL,
+      },
+      {
+        name: '재고 부족 알림',
+        subject: '[{storeName}] 재고 부족 알림',
+        content:
+          '{productName}의 재고가 {currentQuantity}개로 안전재고({reorderPoint}개) 이하로 떨어졌습니다.',
+        type: NotificationType.EMAIL,
+      },
+      {
+        name: '매출 급감 알림',
+        subject: '[{storeName}] 매출 급감 알림',
+        content:
+          '{storeName}의 {date} 매출이 {amount}원으로 전일 대비 {percentage}% 감소했습니다.',
+        type: NotificationType.EMAIL,
+      },
+    ];
+
+    for (const template of sampleTemplates) {
+      const entity = this.templateRepository.create(template);
+      await this.templateRepository.save(entity);
+    }
+  }
+
+  // 엔티티를 GraphQL 모델로 변환
+  private mapEntityToModel(entity: NotificationEntity): Notification {
+    return {
+      id: entity.id,
+      storeId: entity.storeId,
+      employeeId: entity.employeeId,
+      type: entity.type,
+      recipient: entity.recipient,
+      subject: entity.subject,
+      content: entity.content,
+      status: entity.status,
+      sentAt: entity.sentAt?.toISOString(),
+      errorMessage: entity.errorMessage,
+      createdAt: entity.createdAt.toISOString(),
+    };
+  }
+
+  // 템플릿 엔티티를 GraphQL 모델로 변환
+  private mapTemplateEntityToModel(
+    entity: NotificationTemplateEntity,
+  ): NotificationTemplate {
+    return {
+      id: entity.id,
+      name: entity.name,
+      subject: entity.subject,
+      content: entity.content,
+      type: entity.type,
+      createdAt: entity.createdAt.toISOString(),
+      updatedAt: entity.updatedAt.toISOString(),
+    };
+  }
+
   @Query(() => Notification, { nullable: true, description: '알림 조회' })
-  notification(@Args('id', { type: () => ID }) id: string): Notification | null {
-    return notifications.get(id) || null;
+  async notification(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<Notification | null> {
+    const entity = await this.notificationRepository.findOne({
+      where: { id },
+    });
+    if (!entity) return null;
+    return this.mapEntityToModel(entity);
   }
 
   @Query(() => [Notification], { description: '알림 목록 조회' })
-  notifications(
+  async notifications(
     @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
-    @Args('employeeId', { type: () => ID, nullable: true }) employeeId?: string,
+    @Args('employeeId', { type: () => ID, nullable: true })
+    employeeId?: string,
     @Args('status', { type: () => NotificationStatus, nullable: true })
     status?: NotificationStatus,
     @Args('type', { type: () => NotificationType, nullable: true })
-    type?: NotificationType
-  ): Notification[] {
-    let results = Array.from(notifications.values());
+    type?: NotificationType,
+  ): Promise<Notification[]> {
+    const where: any = {};
+    if (storeId) where.storeId = storeId;
+    if (employeeId) where.employeeId = employeeId;
+    if (status) where.status = status;
+    if (type) where.type = type;
 
-    if (storeId) {
-      results = results.filter((n) => n.storeId === storeId);
-    }
+    const entities = await this.notificationRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+    });
 
-    if (employeeId) {
-      results = results.filter((n) => n.employeeId === employeeId);
-    }
-
-    if (status) {
-      results = results.filter((n) => n.status === status);
-    }
-
-    if (type) {
-      results = results.filter((n) => n.type === type);
-    }
-
-    return results.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return entities.map((entity) => this.mapEntityToModel(entity));
   }
 
   @Mutation(() => Notification, { description: '알림 발송' })
   async sendNotification(
-    @Args('input') input: SendNotificationInput
+    @Args('input') input: SendNotificationInput,
   ): Promise<Notification> {
-    const id = `notification-${notificationIdCounter++}`;
-    const now = new Date().toISOString();
-
-    const notification: Notification = {
-      id,
+    const entity = this.notificationRepository.create({
       storeId: input.storeId,
       employeeId: input.employeeId,
       type: input.type,
@@ -122,121 +152,177 @@ export class NotificationResolver {
       subject: input.subject,
       content: input.content,
       status: NotificationStatus.PENDING,
-      createdAt: now,
-    };
+    });
 
-    notifications.set(id, notification);
+    await this.notificationRepository.save(entity);
 
     // 실제 이메일 발송 (비동기 처리)
     try {
-      if (input.type === NotificationType.EMAIL) {
-        await emailTransporter.sendMail({
-          from: process.env.SMTP_FROM || 'noreply@store-management.com',
-          to: input.recipient,
-          subject: input.subject,
-          text: input.content,
-          html: `<p>${input.content.replace(/\n/g, '<br>')}</p>`,
-        });
+      await this.emailService.sendNotification(
+        input.type,
+        input.recipient,
+        input.subject,
+        input.content,
+      );
 
-        notification.status = NotificationStatus.SENT;
-        notification.sentAt = new Date().toISOString();
-      } else {
-        // SMS, SLACK 등은 MVP 단계에서 미구현
-        notification.status = NotificationStatus.SENT;
-        notification.sentAt = new Date().toISOString();
-      }
+      entity.status = NotificationStatus.SENT;
+      entity.sentAt = new Date();
     } catch (error: any) {
-      notification.status = NotificationStatus.FAILED;
-      notification.errorMessage = error.message || '알림 발송 실패';
+      entity.status = NotificationStatus.FAILED;
+      entity.errorMessage = error.message || '알림 발송 실패';
     }
 
-    notifications.set(id, notification);
-    return notification;
+    await this.notificationRepository.save(entity);
+    return this.mapEntityToModel(entity);
   }
 
   // 템플릿 관리 기능
-  @Query(() => NotificationTemplate, { nullable: true, description: '템플릿 조회' })
-  template(@Args('id', { type: () => ID }) id: string): NotificationTemplate | null {
-    return templates.get(id) || null;
+  @Query(() => NotificationTemplate, {
+    nullable: true,
+    description: '템플릿 조회',
+  })
+  async template(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<NotificationTemplate | null> {
+    const entity = await this.templateRepository.findOne({
+      where: { id },
+    });
+    if (!entity) return null;
+    return this.mapTemplateEntityToModel(entity);
   }
 
-  @Query(() => [NotificationTemplate], { description: '템플릿 목록 조회' })
-  notificationTemplates(): NotificationTemplate[] {
-    return Array.from(templates.values());
+  @Query(() => [NotificationTemplate], {
+    description: '템플릿 목록 조회',
+  })
+  async notificationTemplates(): Promise<NotificationTemplate[]> {
+    const entities = await this.templateRepository.find({
+      order: { createdAt: 'DESC' },
+    });
+    return entities.map((entity) => this.mapTemplateEntityToModel(entity));
   }
 
   @Mutation(() => NotificationTemplate, { description: '템플릿 생성' })
-  createTemplate(
+  async createTemplate(
     @Args('name') name: string,
     @Args('subject') subject: string,
     @Args('content') content: string,
-    @Args('type') type: string
-  ): NotificationTemplate {
-    const id = `TEMPLATE-${String(templateIdCounter++).padStart(3, '0')}`;
-    const now = new Date().toISOString();
-
-    const template: NotificationTemplate = {
-      id,
+    @Args('type') type: NotificationType,
+  ): Promise<NotificationTemplate> {
+    const entity = this.templateRepository.create({
       name,
       subject,
       content,
       type,
-      createdAt: now,
-      updatedAt: now,
-    };
+    });
 
-    templates.set(id, template);
-    return template;
+    await this.templateRepository.save(entity);
+    return this.mapTemplateEntityToModel(entity);
   }
 
   @Mutation(() => NotificationTemplate, { description: '템플릿 수정' })
-  updateTemplate(
+  async updateTemplate(
     @Args('id', { type: () => ID }) id: string,
     @Args('name', { nullable: true }) name?: string,
     @Args('subject', { nullable: true }) subject?: string,
-    @Args('content', { nullable: true }) content?: string
-  ): NotificationTemplate {
-    const template = templates.get(id);
-    if (!template) {
+    @Args('content', { nullable: true }) content?: string,
+  ): Promise<NotificationTemplate> {
+    const entity = await this.templateRepository.findOne({
+      where: { id },
+    });
+    if (!entity) {
       throw new Error(`템플릿을 찾을 수 없습니다: ${id}`);
     }
 
-    const updated: NotificationTemplate = {
-      ...template,
-      ...(name && { name }),
-      ...(subject && { subject }),
-      ...(content && { content }),
-      updatedAt: new Date().toISOString(),
-    };
+    if (name) entity.name = name;
+    if (subject) entity.subject = subject;
+    if (content) entity.content = content;
 
-    templates.set(id, updated);
-    return updated;
+    await this.templateRepository.save(entity);
+    return this.mapTemplateEntityToModel(entity);
   }
 
   @Mutation(() => Boolean, { description: '템플릿 삭제' })
-  deleteTemplate(@Args('id', { type: () => ID }) id: string): boolean {
-    return templates.delete(id);
+  async deleteTemplate(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<boolean> {
+    const result = await this.templateRepository.delete(id);
+    return result.affected ? result.affected > 0 : false;
+  }
+
+  // 템플릿을 사용하여 알림 발송
+  @Mutation(() => Notification, {
+    description: '템플릿을 사용하여 알림 발송',
+  })
+  async sendNotificationWithTemplate(
+    @Args('templateId', { type: () => ID }) templateId: string,
+    @Args('recipient') recipient: string,
+    @Args('variables', { type: () => String, nullable: true })
+    variablesJson?: string,
+  ): Promise<Notification> {
+    const template = await this.templateRepository.findOne({
+      where: { id: templateId },
+    });
+    if (!template) {
+      throw new Error(`템플릿을 찾을 수 없습니다: ${templateId}`);
+    }
+
+    const variables: Record<string, string> = variablesJson
+      ? JSON.parse(variablesJson)
+      : {};
+
+    const subject = replaceTemplateVariables(template.subject, variables);
+    const content = replaceTemplateVariables(template.content, variables);
+
+    return this.sendNotification({
+      recipient,
+      subject,
+      content,
+      type: template.type,
+    });
   }
 
   // 알림 통계 조회
   @Query(() => String, { description: '알림 통계 조회 (JSON 형태로 반환)' })
-  notificationStats(
+  async notificationStats(
     @Args('startDate', { nullable: true }) startDate?: string,
-    @Args('endDate', { nullable: true }) endDate?: string
-  ): string {
-    let filtered = Array.from(notifications.values());
+    @Args('endDate', { nullable: true }) endDate?: string,
+  ): Promise<string> {
+    const queryBuilder =
+      this.notificationRepository.createQueryBuilder('notification');
 
     if (startDate) {
-      filtered = filtered.filter((n) => n.createdAt >= startDate);
+      queryBuilder.andWhere('notification.createdAt >= :startDate', {
+        startDate,
+      });
     }
     if (endDate) {
-      filtered = filtered.filter((n) => n.createdAt <= endDate);
+      queryBuilder.andWhere('notification.createdAt <= :endDate', {
+        endDate,
+      });
     }
 
-    const total = filtered.length;
-    const sent = filtered.filter((n) => n.status === NotificationStatus.SENT).length;
-    const failed = filtered.filter((n) => n.status === NotificationStatus.FAILED).length;
-    const pending = filtered.filter((n) => n.status === NotificationStatus.PENDING).length;
+    const total = await queryBuilder.getCount();
+
+    const sent = await queryBuilder
+      .clone()
+      .andWhere('notification.status = :status', {
+        status: NotificationStatus.SENT,
+      })
+      .getCount();
+
+    const failed = await queryBuilder
+      .clone()
+      .andWhere('notification.status = :status', {
+        status: NotificationStatus.FAILED,
+      })
+      .getCount();
+
+    const pending = await queryBuilder
+      .clone()
+      .andWhere('notification.status = :status', {
+        status: NotificationStatus.PENDING,
+      })
+      .getCount();
 
     const stats = {
       total,
@@ -250,4 +336,3 @@ export class NotificationResolver {
     return JSON.stringify(stats);
   }
 }
-
