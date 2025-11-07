@@ -55,7 +55,7 @@ type Mutation {
   adjustInventory(delta: Float!, reason: String, sku: ID!, storeId: ID!): InventoryItem!
 
   """발주 승인"""
-  approvePurchaseOrder(approvedQuantity: Float!, id: String!, notes: String): PurchaseOrder!
+  approvePurchaseOrder(approvedQuantity: Float!, id: ID!, notes: String): PurchaseOrder!
 
   """발주 요청 생성"""
   createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
@@ -64,16 +64,16 @@ type Mutation {
   createSKU(input: CreateSKUInput!): Product!
 
   """SKU 삭제/비활성화"""
-  deleteSKU(id: String!): Boolean!
+  deleteSKU(id: ID!): Boolean!
 
   """입고 처리"""
-  receiveInventory(notes: String, purchaseOrderId: String!, receivedQuantity: Float!): PurchaseOrder!
+  receiveInventory(notes: String, purchaseOrderId: ID!, receivedQuantity: Float!): PurchaseOrder!
 
   """재고 실사 (기존)"""
   reconcileInventory(quantity: Float!, reason: String, sku: ID!, storeId: ID!): InventoryItem!
 
   """발주 거부"""
-  rejectPurchaseOrder(id: String!, notes: String!): PurchaseOrder!
+  rejectPurchaseOrder(id: ID!, notes: String!): PurchaseOrder!
 
   """안전재고 임계치 설정"""
   setReorderPoint(input: SetReorderPointInput!): InventoryItem!
@@ -82,7 +82,7 @@ type Mutation {
   submitInventoryCount(input: SubmitInventoryCountInput!): InventoryItem!
 
   """SKU 정보 수정"""
-  updateSKU(id: String!, input: UpdateSKUInput!): Product!
+  updateSKU(id: ID!, input: UpdateSKUInput!): Product!
 }
 
 """상품/SKU"""
@@ -149,7 +149,7 @@ type Query {
   products: [Product!]!
 
   """발주 조회"""
-  purchaseOrder(id: String!): PurchaseOrder
+  purchaseOrder(id: ID!): PurchaseOrder
 
   """발주 목록 조회"""
   purchaseOrders(sku: ID, status: PurchaseOrderStatus, storeId: ID): [PurchaseOrder!]!
@@ -158,7 +158,7 @@ type Query {
   reorderRecommendations(sku: ID, storeId: ID): [ReorderRecommendation!]!
 
   """SKU 조회"""
-  sku(id: String!): Product
+  sku(id: ID!): Product
 
   """SKU별 재고 조회 (모든 지점)"""
   skuInventories(sku: ID!): [InventoryItem!]!
