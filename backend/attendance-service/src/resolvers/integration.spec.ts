@@ -67,9 +67,9 @@ describe('Attendance Service Integration Tests', () => {
   });
 
   describe('Complete Employee and Attendance Workflow', () => {
-    it('should create employee, record attendance, and generate report', () => {
+    it('should create employee, record attendance, and generate report', async () => {
       // 1. 직원 생성
-      const employee = employeeResolver.createEmployee({
+      const employee = await employeeResolver.createEmployee({
         name: '테스트 직원',
         email: 'test@example.com',
         phone: '010-1234-5678',
@@ -81,7 +81,7 @@ describe('Attendance Service Integration Tests', () => {
       expect(employee.id).toBeDefined();
 
       // 2. 출근 기록
-      const checkInResult = attendanceResolver.checkIn({
+      const checkInResult = await attendanceResolver.checkIn({
         storeId: 'STORE-001',
         employeeId: employee.id,
         date: '2024-01-01',
@@ -93,7 +93,7 @@ describe('Attendance Service Integration Tests', () => {
       expect(checkInResult.checkInAt).toBe('2024-01-01T09:00:00');
 
       // 3. 퇴근 기록
-      const checkOutResult = attendanceResolver.checkOut({
+      const checkOutResult = await attendanceResolver.checkOut({
         storeId: 'STORE-001',
         employeeId: employee.id,
         date: '2024-01-01',
@@ -105,7 +105,7 @@ describe('Attendance Service Integration Tests', () => {
       expect(checkOutResult.workingHours).toBe(9);
 
       // 4. 근태 승인
-      const approvedResult = attendanceResolver.approveAttendance(
+      const approvedResult = await attendanceResolver.approveAttendance(
         'STORE-001',
         employee.id,
         '2024-01-01',
@@ -115,7 +115,7 @@ describe('Attendance Service Integration Tests', () => {
       expect(approvedResult.status).toBe(AttendanceStatus.APPROVED);
 
       // 5. 리포트 생성
-      const report = reportResolver.dailyAttendanceReport('2024-01-01', 'STORE-001');
+      const report = await reportResolver.dailyAttendanceReport('2024-01-01', 'STORE-001');
 
       expect(report).toBeDefined();
       expect(report.date).toBe('2024-01-01');
@@ -123,15 +123,15 @@ describe('Attendance Service Integration Tests', () => {
       expect(report.employeeStats[0].employeeName).toBe('테스트 직원');
     });
 
-    it('should handle multiple employees and attendance records', () => {
+    it('should handle multiple employees and attendance records', async () => {
       // 여러 직원 생성
-      const emp1 = employeeResolver.createEmployee({
+      const emp1 = await employeeResolver.createEmployee({
         name: '직원1',
         role: 'EMPLOYEE',
         assignedStoreIds: ['STORE-001'],
       });
 
-      const emp2 = employeeResolver.createEmployee({
+      const emp2 = await employeeResolver.createEmployee({
         name: '직원2',
         role: 'EMPLOYEE',
         assignedStoreIds: ['STORE-001'],
@@ -139,24 +139,24 @@ describe('Attendance Service Integration Tests', () => {
 
       // 여러 날짜의 출근 기록
       const dates = ['2024-01-01', '2024-01-02', '2024-01-03'];
-      dates.forEach((date) => {
-        attendanceResolver.checkIn({
+      for (const date of dates) {
+        await attendanceResolver.checkIn({
           storeId: 'STORE-001',
           employeeId: emp1.id,
           date,
           checkInAt: `${date}T09:00:00`,
         });
 
-        attendanceResolver.checkIn({
+        await attendanceResolver.checkIn({
           storeId: 'STORE-001',
           employeeId: emp2.id,
           date,
           checkInAt: `${date}T09:00:00`,
         });
-      });
+      }
 
       // 출근 기록 목록 조회
-      const records = attendanceResolver.attendanceRecords(
+      const records = await attendanceResolver.attendanceRecords(
         '2024-01-01',
         '2024-01-03',
         'STORE-001',
@@ -167,28 +167,28 @@ describe('Attendance Service Integration Tests', () => {
       expect(records.length).toBe(6); // 2명 * 3일
 
       // 주간 리포트 생성
-      const weeklyReport = reportResolver.weeklyAttendanceReport('2024-01-01', 'STORE-001');
+      const weeklyReport = await reportResolver.weeklyAttendanceReport('2024-01-01', 'STORE-001');
 
       expect(weeklyReport.dailyReports.length).toBe(7);
       expect(weeklyReport.attendanceRate).toBeGreaterThan(0);
     });
 
-    it('should handle approval workflow', () => {
-      const employee = employeeResolver.createEmployee({
+    it('should handle approval workflow', async () => {
+      const employee = await employeeResolver.createEmployee({
         name: '승인 테스트',
         role: 'EMPLOYEE',
         assignedStoreIds: ['STORE-001'],
       });
 
       // 출퇴근 기록
-      attendanceResolver.checkIn({
+      await attendanceResolver.checkIn({
         storeId: 'STORE-001',
         employeeId: employee.id,
         date: '2024-01-01',
         checkInAt: '2024-01-01T09:00:00',
       });
 
-      attendanceResolver.checkOut({
+      await attendanceResolver.checkOut({
         storeId: 'STORE-001',
         employeeId: employee.id,
         date: '2024-01-01',
@@ -196,19 +196,19 @@ describe('Attendance Service Integration Tests', () => {
       });
 
       // 승인 대기 목록 조회
-      const pending = attendanceResolver.pendingApprovals('STORE-001', undefined);
+      const pending = await attendanceResolver.pendingApprovals('STORE-001', undefined);
       expect(pending.length).toBe(1);
       expect(pending[0].status).toBe(AttendanceStatus.PENDING);
 
       // 승인
-      attendanceResolver.approveAttendance('STORE-001', employee.id, '2024-01-01');
+      await attendanceResolver.approveAttendance('STORE-001', employee.id, '2024-01-01');
 
       // 승인 대기 목록이 비어있는지 확인
-      const pendingAfter = attendanceResolver.pendingApprovals('STORE-001', undefined);
+      const pendingAfter = await attendanceResolver.pendingApprovals('STORE-001', undefined);
       expect(pendingAfter.length).toBe(0);
 
       // 승인된 기록 조회
-      const approvedRecords = attendanceResolver.attendanceRecords(
+      const approvedRecords = await attendanceResolver.attendanceRecords(
         '2024-01-01',
         '2024-01-01',
         undefined,
@@ -220,15 +220,15 @@ describe('Attendance Service Integration Tests', () => {
       expect(approvedRecords[0].status).toBe(AttendanceStatus.APPROVED);
     });
 
-    it('should handle rejection and correction request', () => {
-      const employee = employeeResolver.createEmployee({
+    it('should handle rejection and correction request', async () => {
+      const employee = await employeeResolver.createEmployee({
         name: '거부 테스트',
         role: 'EMPLOYEE',
         assignedStoreIds: ['STORE-001'],
       });
 
       // 출퇴근 기록
-      attendanceResolver.checkIn({
+      await attendanceResolver.checkIn({
         storeId: 'STORE-001',
         employeeId: employee.id,
         date: '2024-01-01',
@@ -236,7 +236,7 @@ describe('Attendance Service Integration Tests', () => {
       });
 
       // 거부
-      const rejected = attendanceResolver.rejectAttendance(
+      const rejected = await attendanceResolver.rejectAttendance(
         'STORE-001',
         employee.id,
         '2024-01-01',
@@ -247,7 +247,7 @@ describe('Attendance Service Integration Tests', () => {
       expect(rejected.notes).toBe('기록 오류');
 
       // 수정 요청
-      const corrected = attendanceResolver.requestAttendanceCorrection(
+      const corrected = await attendanceResolver.requestAttendanceCorrection(
         'STORE-001',
         employee.id,
         '2024-01-01',
@@ -260,28 +260,28 @@ describe('Attendance Service Integration Tests', () => {
   });
 
   describe('Error Handling Integration', () => {
-    it('should handle invalid inputs across resolvers', () => {
+    it('should handle invalid inputs across resolvers', async () => {
       // 잘못된 직원 생성
-      expect(() => {
+      await expect(
         employeeResolver.createEmployee({
           name: '',
           role: 'EMPLOYEE',
           assignedStoreIds: ['STORE-001'],
-        });
-      }).toThrow();
+        })
+      ).rejects.toThrow();
 
       // 잘못된 출근 기록
-      expect(() => {
+      await expect(
         attendanceResolver.checkIn({
           storeId: '',
           employeeId: 'EMP-001',
           date: '2024-01-01',
           checkInAt: '2024-01-01T09:00:00',
-        });
-      }).toThrow();
+        })
+      ).rejects.toThrow();
 
       // 존재하지 않는 직원의 출근 기록 조회
-      const result = employeeResolver.employee('NON-EXISTENT');
+      const result = await employeeResolver.employee('NON-EXISTENT');
       expect(result).toBeNull();
     });
   });
