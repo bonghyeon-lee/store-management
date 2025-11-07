@@ -1,58 +1,68 @@
 import { Query, Resolver, Args, Mutation, ID } from '@nestjs/graphql';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import {
   PurchaseOrder,
   PurchaseOrderStatus,
 } from '../models/purchase-order.model';
 import { CreatePurchaseOrderInput } from '../models/inputs.model';
-import { inventoryItems, inventoryAudits } from './inventory.resolver';
-
-// 인메모리 데이터 저장소 (MVP 단계)
-const purchaseOrders: Map<string, PurchaseOrder> = new Map();
-
-// 키 생성 함수
-const generatePurchaseOrderId = () =>
-  `PO-${String(purchaseOrders.size + 1).padStart(6, '0')}`;
+import { PurchaseOrderEntity } from '../entities/purchase-order.entity';
+import { InventoryItemEntity } from '../entities/inventory-item.entity';
+import { InventoryAuditEntity } from '../entities/inventory-audit.entity';
 
 @Resolver(() => PurchaseOrder)
 export class PurchaseOrderResolver {
+  constructor(
+    @InjectRepository(PurchaseOrderEntity)
+    private purchaseOrderRepository: Repository<PurchaseOrderEntity>,
+    @InjectRepository(InventoryItemEntity)
+    private inventoryItemRepository: Repository<InventoryItemEntity>,
+    @InjectRepository(InventoryAuditEntity)
+    private inventoryAuditRepository: Repository<InventoryAuditEntity>
+  ) {}
+
   @Query(() => PurchaseOrder, { nullable: true, description: '발주 조회' })
-  purchaseOrder(@Args('id') id: string): PurchaseOrder | null {
-    return purchaseOrders.get(id) || null;
+  async purchaseOrder(
+    @Args('id', { type: () => ID }) id: string
+  ): Promise<PurchaseOrder | null> {
+    const entity = await this.purchaseOrderRepository.findOne({
+      where: { id },
+    });
+    if (!entity) return null;
+    return this.mapEntityToModel(entity);
   }
 
   @Query(() => [PurchaseOrder], { description: '발주 목록 조회' })
-  purchaseOrders(
+  async purchaseOrders(
     @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
     @Args('sku', { type: () => ID, nullable: true }) sku?: string,
     @Args('status', { type: () => PurchaseOrderStatus, nullable: true })
     status?: PurchaseOrderStatus
-  ): PurchaseOrder[] {
-    let result = Array.from(purchaseOrders.values());
+  ): Promise<PurchaseOrder[]> {
+    const queryBuilder =
+      this.purchaseOrderRepository.createQueryBuilder('purchaseOrder');
 
     if (storeId) {
-      result = result.filter((po) => po.storeId === storeId);
+      queryBuilder.andWhere('purchaseOrder.storeId = :storeId', { storeId });
     }
 
     if (sku) {
-      result = result.filter((po) => po.sku === sku);
+      queryBuilder.andWhere('purchaseOrder.sku = :sku', { sku });
     }
 
     if (status) {
-      result = result.filter((po) => po.status === status);
+      queryBuilder.andWhere('purchaseOrder.status = :status', { status });
     }
 
-    return result;
+    const entities = await queryBuilder.getMany();
+    return entities.map((entity) => this.mapEntityToModel(entity));
   }
 
   @Mutation(() => PurchaseOrder, { description: '발주 요청 생성' })
-  createPurchaseOrder(
+  async createPurchaseOrder(
     @Args('input') input: CreatePurchaseOrderInput
-  ): PurchaseOrder {
-    const id = generatePurchaseOrderId();
-    const now = new Date().toISOString();
-
-    const purchaseOrder: PurchaseOrder = {
-      id,
+  ): Promise<PurchaseOrder> {
+    const entity = this.purchaseOrderRepository.create({
       storeId: input.storeId,
       sku: input.sku,
       requestedQuantity: input.requestedQuantity,
@@ -61,147 +71,173 @@ export class PurchaseOrderResolver {
       status: PurchaseOrderStatus.PENDING,
       requestedBy: 'USER-001', // 실제로는 컨텍스트에서 가져옴
       approvedBy: undefined,
-      requestedAt: now,
+      requestedAt: new Date(),
       approvedAt: undefined,
       receivedAt: undefined,
       notes: input.notes,
-    };
+    });
 
-    purchaseOrders.set(id, purchaseOrder);
-    return purchaseOrder;
+    const saved = await this.purchaseOrderRepository.save(entity);
+    return this.mapEntityToModel(saved);
   }
 
   @Mutation(() => PurchaseOrder, { description: '발주 승인' })
-  approvePurchaseOrder(
-    @Args('id') id: string,
+  async approvePurchaseOrder(
+    @Args('id', { type: () => ID }) id: string,
     @Args('approvedQuantity') approvedQuantity: number,
     @Args('notes', { nullable: true }) notes?: string
-  ): PurchaseOrder {
-    const purchaseOrder = purchaseOrders.get(id);
+  ): Promise<PurchaseOrder> {
+    const entity = await this.purchaseOrderRepository.findOne({
+      where: { id },
+    });
 
-    if (!purchaseOrder) {
+    if (!entity) {
       throw new Error(`발주를 찾을 수 없습니다: ${id}`);
     }
 
-    if (purchaseOrder.status !== PurchaseOrderStatus.PENDING) {
+    if (entity.status !== PurchaseOrderStatus.PENDING) {
       throw new Error('승인 대기 상태의 발주만 승인할 수 있습니다.');
     }
 
-    const now = new Date().toISOString();
-
-    purchaseOrder.status = PurchaseOrderStatus.APPROVED;
-    purchaseOrder.approvedQuantity = approvedQuantity;
-    purchaseOrder.approvedBy = 'MANAGER-001'; // 실제로는 컨텍스트에서 가져옴
-    purchaseOrder.approvedAt = now;
+    entity.status = PurchaseOrderStatus.APPROVED;
+    entity.approvedQuantity = approvedQuantity;
+    entity.approvedBy = 'MANAGER-001'; // 실제로는 컨텍스트에서 가져옴
+    entity.approvedAt = new Date();
     if (notes) {
-      purchaseOrder.notes = notes;
+      entity.notes = notes;
     }
 
-    purchaseOrders.set(id, purchaseOrder);
-    return purchaseOrder;
+    const updated = await this.purchaseOrderRepository.save(entity);
+    return this.mapEntityToModel(updated);
   }
 
   @Mutation(() => PurchaseOrder, { description: '발주 거부' })
-  rejectPurchaseOrder(
-    @Args('id') id: string,
+  async rejectPurchaseOrder(
+    @Args('id', { type: () => ID }) id: string,
     @Args('notes') notes: string
-  ): PurchaseOrder {
-    const purchaseOrder = purchaseOrders.get(id);
+  ): Promise<PurchaseOrder> {
+    const entity = await this.purchaseOrderRepository.findOne({
+      where: { id },
+    });
 
-    if (!purchaseOrder) {
+    if (!entity) {
       throw new Error(`발주를 찾을 수 없습니다: ${id}`);
     }
 
-    if (purchaseOrder.status !== PurchaseOrderStatus.PENDING) {
+    if (entity.status !== PurchaseOrderStatus.PENDING) {
       throw new Error('승인 대기 상태의 발주만 거부할 수 있습니다.');
     }
 
-    purchaseOrder.status = PurchaseOrderStatus.REJECTED;
-    purchaseOrder.approvedBy = 'MANAGER-001'; // 실제로는 컨텍스트에서 가져옴
-    purchaseOrder.approvedAt = new Date().toISOString();
-    purchaseOrder.notes = notes;
+    entity.status = PurchaseOrderStatus.REJECTED;
+    entity.approvedBy = 'MANAGER-001'; // 실제로는 컨텍스트에서 가져옴
+    entity.approvedAt = new Date();
+    entity.notes = notes;
 
-    purchaseOrders.set(id, purchaseOrder);
-    return purchaseOrder;
+    const updated = await this.purchaseOrderRepository.save(entity);
+    return this.mapEntityToModel(updated);
   }
 
   @Mutation(() => PurchaseOrder, { description: '입고 처리' })
-  receiveInventory(
-    @Args('purchaseOrderId') purchaseOrderId: string,
+  async receiveInventory(
+    @Args('purchaseOrderId', { type: () => ID }) purchaseOrderId: string,
     @Args('receivedQuantity') receivedQuantity: number,
     @Args('notes', { nullable: true }) notes?: string
-  ): PurchaseOrder {
-    const purchaseOrder = purchaseOrders.get(purchaseOrderId);
+  ): Promise<PurchaseOrder> {
+    const entity = await this.purchaseOrderRepository.findOne({
+      where: { id: purchaseOrderId },
+    });
 
-    if (!purchaseOrder) {
+    if (!entity) {
       throw new Error(`발주를 찾을 수 없습니다: ${purchaseOrderId}`);
     }
 
-    if (purchaseOrder.status !== PurchaseOrderStatus.APPROVED) {
+    if (entity.status !== PurchaseOrderStatus.APPROVED) {
       throw new Error('승인된 발주만 입고 처리할 수 있습니다.');
     }
 
-    const now = new Date().toISOString();
+    const now = new Date();
 
-    purchaseOrder.status = PurchaseOrderStatus.RECEIVED;
-    purchaseOrder.receivedQuantity = receivedQuantity;
-    purchaseOrder.receivedAt = now;
+    entity.status = PurchaseOrderStatus.RECEIVED;
+    entity.receivedQuantity = receivedQuantity;
+    entity.receivedAt = now;
     if (notes) {
-      purchaseOrder.notes = notes;
+      entity.notes = notes;
     }
 
-    purchaseOrders.set(purchaseOrderId, purchaseOrder);
+    const updated = await this.purchaseOrderRepository.save(entity);
 
     // 입고 시 재고 자동 업데이트
-    const inventoryKey = `${purchaseOrder.storeId}:${purchaseOrder.sku}`;
-    const existingInventory = inventoryItems.get(inventoryKey);
+    const existingInventory = await this.inventoryItemRepository.findOne({
+      where: { storeId: entity.storeId, sku: entity.sku },
+    });
 
     if (existingInventory) {
       // 기존 재고에 입고 수량 추가
-      const updatedInventory = {
-        ...existingInventory,
-        quantityOnHand: existingInventory.quantityOnHand + receivedQuantity,
-        updatedAt: now,
-      };
-      inventoryItems.set(inventoryKey, updatedInventory);
+      const previousQuantity = Number(existingInventory.quantityOnHand);
+      existingInventory.quantityOnHand =
+        previousQuantity + receivedQuantity;
+      existingInventory.updatedAt = now;
+      await this.inventoryItemRepository.save(existingInventory);
 
       // 재고 실사 이력 기록
-      inventoryAudits.push({
-        id: `AUDIT-${inventoryAudits.length + 1}`,
-        storeId: purchaseOrder.storeId,
-        sku: purchaseOrder.sku,
-        previousQuantity: existingInventory.quantityOnHand,
-        newQuantity: updatedInventory.quantityOnHand,
+      const auditEntity = this.inventoryAuditRepository.create({
+        storeId: entity.storeId,
+        sku: entity.sku,
+        previousQuantity,
+        newQuantity: previousQuantity + receivedQuantity,
         auditDate: now,
         performedBy: 'SYSTEM', // 입고 처리로 인한 자동 업데이트
         notes: `입고 처리: 발주 ${purchaseOrderId} (${receivedQuantity}개)`,
       });
+      await this.inventoryAuditRepository.save(auditEntity);
     } else {
       // 재고 항목이 없으면 새로 생성
-      const newInventory = {
-        storeId: purchaseOrder.storeId,
-        sku: purchaseOrder.sku,
+      const newInventory = this.inventoryItemRepository.create({
+        storeId: entity.storeId,
+        sku: entity.sku,
         quantityOnHand: receivedQuantity,
         reserved: 0,
         reorderPoint: 0,
         lastAuditAt: now,
-        updatedAt: now,
-      };
-      inventoryItems.set(inventoryKey, newInventory);
+      });
+      await this.inventoryItemRepository.save(newInventory);
 
       // 재고 실사 이력 기록
-      inventoryAudits.push({
-        id: `AUDIT-${inventoryAudits.length + 1}`,
-        storeId: purchaseOrder.storeId,
-        sku: purchaseOrder.sku,
+      const auditEntity = this.inventoryAuditRepository.create({
+        storeId: entity.storeId,
+        sku: entity.sku,
         previousQuantity: 0,
         newQuantity: receivedQuantity,
         auditDate: now,
         performedBy: 'SYSTEM',
         notes: `입고 처리: 발주 ${purchaseOrderId} (${receivedQuantity}개)`,
       });
+      await this.inventoryAuditRepository.save(auditEntity);
     }
 
-    return purchaseOrder;
+    return this.mapEntityToModel(updated);
+  }
+
+  // 엔티티를 GraphQL 모델로 변환
+  private mapEntityToModel(entity: PurchaseOrderEntity): PurchaseOrder {
+    return {
+      id: entity.id,
+      storeId: entity.storeId,
+      sku: entity.sku,
+      requestedQuantity: Number(entity.requestedQuantity),
+      approvedQuantity: entity.approvedQuantity
+        ? Number(entity.approvedQuantity)
+        : undefined,
+      receivedQuantity: entity.receivedQuantity
+        ? Number(entity.receivedQuantity)
+        : undefined,
+      status: entity.status,
+      requestedBy: entity.requestedBy,
+      approvedBy: entity.approvedBy,
+      requestedAt: entity.requestedAt.toISOString(),
+      approvedAt: entity.approvedAt?.toISOString(),
+      receivedAt: entity.receivedAt?.toISOString(),
+      notes: entity.notes,
+    };
   }
 }

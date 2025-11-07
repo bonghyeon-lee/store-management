@@ -7,6 +7,8 @@ import {
   ResolveField,
   Parent,
 } from '@nestjs/graphql';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
 // @ts-ignore - dataloader는 CommonJS 모듈이지만 esModuleInterop으로 처리됨
 import DataLoader from 'dataloader';
 import {
@@ -19,94 +21,34 @@ import {
   SetReorderPointInput,
 } from '../models/inputs.model';
 import { Product } from '../models/product.model';
-
-// 인메모리 데이터 저장소 (MVP 단계)
-export const inventoryItems: Map<string, InventoryItem> = new Map();
-export const inventoryAudits: InventoryAudit[] = [];
-
-// Product 데이터 (product.resolver.ts와 공유)
-// 실제로는 별도 서비스나 모듈에서 가져와야 하지만, MVP 단계에서는 인메모리 사용
-const products: Map<string, Product> = new Map();
-
-// 키 생성 함수
-const getInventoryKey = (storeId: string, sku: string) => `${storeId}:${sku}`;
-
-// Product DataLoader 생성 함수
-const createProductLoader = (): DataLoader<string, Product | null> => {
-  return new DataLoader<string, Product | null>(
-    async (productIds: readonly string[]) => {
-      // 배치로 Product 조회
-      return productIds.map((id) => products.get(id) || null);
-    }
-  );
-};
-
-// 초기 샘플 데이터
-const initializeSampleData = () => {
-  const now = new Date().toISOString();
-
-  // Product 데이터 초기화 (product.resolver.ts와 동일한 데이터)
-  products.set('SKU-001', {
-    id: 'SKU-001',
-    name: '샘플 상품 1',
-    description: '테스트용 상품 1',
-    unitPrice: 10000,
-    category: '일반',
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-  });
-  products.set('SKU-002', {
-    id: 'SKU-002',
-    name: '샘플 상품 2',
-    description: '테스트용 상품 2',
-    unitPrice: 25000,
-    category: '일반',
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-  });
-  products.set('SKU-003', {
-    id: 'SKU-003',
-    name: '샘플 상품 3',
-    description: '테스트용 상품 3',
-    unitPrice: 39900,
-    category: '특가',
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  // InventoryItem 데이터 초기화
-  inventoryItems.set('STORE-001:SKU-001', {
-    storeId: 'STORE-001',
-    sku: 'SKU-001',
-    quantityOnHand: 50,
-    reserved: 5,
-    reorderPoint: 30,
-    lastAuditAt: now,
-    updatedAt: now,
-  });
-  inventoryItems.set('STORE-001:SKU-002', {
-    storeId: 'STORE-001',
-    sku: 'SKU-002',
-    quantityOnHand: 20,
-    reserved: 2,
-    reorderPoint: 25,
-    lastAuditAt: now,
-    updatedAt: now,
-  });
-};
-
-initializeSampleData();
+import { InventoryItemEntity } from '../entities/inventory-item.entity';
+import { InventoryAuditEntity } from '../entities/inventory-audit.entity';
+import { ProductEntity } from '../entities/product.entity';
 
 @Resolver(() => InventoryItem)
 export class InventoryResolver {
   private productLoader: DataLoader<string, Product | null>;
 
-  constructor() {
-    // DataLoader 초기화 (실제로는 컨텍스트에서 가져와야 함)
-    this.productLoader = createProductLoader();
+  constructor(
+    @InjectRepository(InventoryItemEntity)
+    private inventoryItemRepository: Repository<InventoryItemEntity>,
+    @InjectRepository(InventoryAuditEntity)
+    private inventoryAuditRepository: Repository<InventoryAuditEntity>,
+    @InjectRepository(ProductEntity)
+    private productRepository: Repository<ProductEntity>
+  ) {
+    // Product DataLoader 초기화
+    this.productLoader = new DataLoader<string, Product | null>(
+      async (productIds: readonly string[]) => {
+        const products = await this.productRepository.find({
+          where: { id: In([...productIds]) },
+        });
+        const productMap = new Map(
+          products.map((p) => [p.id, this.mapProductEntityToModel(p)])
+        );
+        return productIds.map((id) => productMap.get(id) || null);
+      }
+    );
   }
 
   // Product 조회를 위한 ResolveField (Federation 확장)
@@ -121,136 +63,160 @@ export class InventoryResolver {
   }
 
   @Query(() => InventoryItem, { nullable: true, description: '재고 항목 조회' })
-  inventoryItem(
+  async inventoryItem(
     @Args('storeId', { type: () => ID }) storeId: string,
     @Args('sku', { type: () => ID }) sku: string
-  ): InventoryItem | null {
-    const key = getInventoryKey(storeId, sku);
-    return inventoryItems.get(key) || null;
+  ): Promise<InventoryItem | null> {
+    const entity = await this.inventoryItemRepository.findOne({
+      where: { storeId, sku },
+    });
+    if (!entity) return null;
+    return this.mapInventoryItemEntityToModel(entity);
   }
 
   @Query(() => [InventoryItem], { description: '지점별 재고 목록 조회' })
-  storeInventories(
+  async storeInventories(
     @Args('storeId', { type: () => ID }) storeId: string,
     @Args('sku', { type: () => ID, nullable: true }) sku?: string
-  ): InventoryItem[] {
-    const items = Array.from(inventoryItems.values());
-    let filtered = items.filter((item) => item.storeId === storeId);
+  ): Promise<InventoryItem[]> {
+    const queryBuilder =
+      this.inventoryItemRepository.createQueryBuilder('inventory');
+
+    queryBuilder.where('inventory.storeId = :storeId', { storeId });
 
     if (sku) {
-      filtered = filtered.filter((item) => item.sku === sku);
+      queryBuilder.andWhere('inventory.sku = :sku', { sku });
     }
 
-    return filtered;
+    const entities = await queryBuilder.getMany();
+    return entities.map((entity) => this.mapInventoryItemEntityToModel(entity));
   }
 
   @Query(() => [InventoryItem], { description: 'SKU별 재고 조회 (모든 지점)' })
-  skuInventories(
+  async skuInventories(
     @Args('sku', { type: () => ID }) sku: string
-  ): InventoryItem[] {
-    const items = Array.from(inventoryItems.values());
-    return items.filter((item) => item.sku === sku);
+  ): Promise<InventoryItem[]> {
+    const entities = await this.inventoryItemRepository.find({
+      where: { sku },
+    });
+    return entities.map((entity) => this.mapInventoryItemEntityToModel(entity));
   }
 
   @Query(() => [InventoryAudit], { description: '재고 실사 이력 조회' })
-  inventoryAuditHistory(
+  async inventoryAuditHistory(
     @Args('startDate') startDate: string,
     @Args('endDate') endDate: string,
     @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
     @Args('sku', { type: () => ID, nullable: true }) sku?: string
-  ): InventoryAudit[] {
-    let filtered = inventoryAudits.filter((audit) => {
-      return audit.auditDate >= startDate && audit.auditDate <= endDate;
-    });
+  ): Promise<InventoryAudit[]> {
+    const queryBuilder =
+      this.inventoryAuditRepository.createQueryBuilder('audit');
+
+    queryBuilder
+      .where('audit.auditDate >= :startDate', { startDate })
+      .andWhere('audit.auditDate <= :endDate', { endDate });
 
     if (storeId) {
-      filtered = filtered.filter((audit) => audit.storeId === storeId);
+      queryBuilder.andWhere('audit.storeId = :storeId', { storeId });
     }
 
     if (sku) {
-      filtered = filtered.filter((audit) => audit.sku === sku);
+      queryBuilder.andWhere('audit.sku = :sku', { sku });
     }
 
-    return filtered;
+    const entities = await queryBuilder.getMany();
+    return entities.map((entity) => this.mapInventoryAuditEntityToModel(entity));
   }
 
   @Query(() => [ReorderRecommendation], {
     description: '리오더 추천 목록 조회',
   })
-  reorderRecommendations(
+  async reorderRecommendations(
     @Args('storeId', { type: () => ID, nullable: true }) storeId?: string,
     @Args('sku', { type: () => ID, nullable: true }) sku?: string
-  ): ReorderRecommendation[] {
-    const items = Array.from(inventoryItems.values());
-    let filtered = items.filter(
-      (item) => item.quantityOnHand <= item.reorderPoint
+  ): Promise<ReorderRecommendation[]> {
+    const queryBuilder =
+      this.inventoryItemRepository.createQueryBuilder('inventory');
+
+    queryBuilder.where(
+      'inventory.quantityOnHand <= inventory.reorderPoint'
     );
 
     if (storeId) {
-      filtered = filtered.filter((item) => item.storeId === storeId);
+      queryBuilder.andWhere('inventory.storeId = :storeId', { storeId });
     }
 
     if (sku) {
-      filtered = filtered.filter((item) => item.sku === sku);
+      queryBuilder.andWhere('inventory.sku = :sku', { sku });
     }
 
+    const entities = await queryBuilder.getMany();
+
     // 리오더 추천 생성
-    const recommendations: ReorderRecommendation[] = filtered.map((item) => {
-      const shortage = item.reorderPoint - item.quantityOnHand;
-      const recommendedQuantity = Math.max(
-        item.reorderPoint * 2 - item.quantityOnHand,
-        shortage
-      );
+    const recommendations: ReorderRecommendation[] = await Promise.all(
+      entities.map(async (entity) => {
+        const quantityOnHand = Number(entity.quantityOnHand);
+        const reorderPoint = Number(entity.reorderPoint);
+        const shortage = reorderPoint - quantityOnHand;
+        const recommendedQuantity = Math.max(
+          reorderPoint * 2 - quantityOnHand,
+          shortage
+        );
 
-      // 우선순위 계산 (재고 부족 정도 기준)
-      const shortageRatio = shortage / item.reorderPoint;
-      let priority = 1;
-      let urgency = 'LOW';
+        // 우선순위 계산 (재고 부족 정도 기준)
+        const shortageRatio = shortage / reorderPoint;
+        let priority = 1;
+        let urgency = 'LOW';
 
-      if (shortageRatio >= 0.8) {
-        priority = 1;
-        urgency = 'HIGH';
-      } else if (shortageRatio >= 0.5) {
-        priority = 2;
-        urgency = 'MEDIUM';
-      } else {
-        priority = 3;
-        urgency = 'LOW';
-      }
+        if (shortageRatio >= 0.8) {
+          priority = 1;
+          urgency = 'HIGH';
+        } else if (shortageRatio >= 0.5) {
+          priority = 2;
+          urgency = 'MEDIUM';
+        } else {
+          priority = 3;
+          urgency = 'LOW';
+        }
 
-      // 실제 Product 이름 가져오기
-      const product = products.get(item.sku);
-      const productName = product?.name || `상품-${item.sku}`;
+        // 실제 Product 이름 가져오기
+        const product = await this.productRepository.findOne({
+          where: { id: entity.sku },
+        });
+        const productName = product?.name || `상품-${entity.sku}`;
 
-      return {
-        storeId: item.storeId,
-        sku: item.sku,
-        productName,
-        currentQuantity: item.quantityOnHand,
-        reorderPoint: item.reorderPoint,
-        recommendedQuantity,
-        priority,
-        urgency,
-      };
-    });
+        return {
+          storeId: entity.storeId,
+          sku: entity.sku,
+          productName,
+          currentQuantity: quantityOnHand,
+          reorderPoint,
+          recommendedQuantity,
+          priority,
+          urgency,
+        };
+      })
+    );
 
     // 우선순위로 정렬
     return recommendations.sort((a, b) => a.priority - b.priority);
   }
 
   @Mutation(() => InventoryItem, { description: '재고 실사 입력' })
-  submitInventoryCount(
+  async submitInventoryCount(
     @Args('input') input: SubmitInventoryCountInput
-  ): InventoryItem {
-    const key = getInventoryKey(input.storeId, input.sku);
-    const existing = inventoryItems.get(key);
+  ): Promise<InventoryItem> {
+    const existing = await this.inventoryItemRepository.findOne({
+      where: { storeId: input.storeId, sku: input.sku },
+    });
 
-    const previousQuantity = existing?.quantityOnHand || 0;
-    const now = new Date().toISOString();
+    const previousQuantity = existing
+      ? Number(existing.quantityOnHand)
+      : 0;
+    const now = new Date();
 
     // 재고 실사 이력 기록
-    const audit: InventoryAudit = {
-      id: `AUDIT-${inventoryAudits.length + 1}`,
+    const auditEntity = this.inventoryAuditRepository.create({
       storeId: input.storeId,
       sku: input.sku,
       previousQuantity,
@@ -258,113 +224,127 @@ export class InventoryResolver {
       auditDate: now,
       performedBy: 'USER-001', // 실제로는 컨텍스트에서 가져옴
       notes: input.notes,
-    };
+    });
+    await this.inventoryAuditRepository.save(auditEntity);
 
-    inventoryAudits.push(audit);
-
-    // 재고 업데이트
-    const inventoryItem: InventoryItem = {
-      storeId: input.storeId,
-      sku: input.sku,
-      quantityOnHand: input.quantity,
-      reserved: existing?.reserved || 0,
-      reorderPoint: existing?.reorderPoint || 0,
-      lastAuditAt: now,
-      updatedAt: now,
-    };
-
-    inventoryItems.set(key, inventoryItem);
-    return inventoryItem;
+    // 재고 업데이트 또는 생성
+    if (existing) {
+      existing.quantityOnHand = input.quantity;
+      existing.lastAuditAt = now;
+      const updated = await this.inventoryItemRepository.save(existing);
+      return this.mapInventoryItemEntityToModel(updated);
+    } else {
+      const newEntity = this.inventoryItemRepository.create({
+        storeId: input.storeId,
+        sku: input.sku,
+        quantityOnHand: input.quantity,
+        reserved: 0,
+        reorderPoint: 0,
+        lastAuditAt: now,
+      });
+      const saved = await this.inventoryItemRepository.save(newEntity);
+      return this.mapInventoryItemEntityToModel(saved);
+    }
   }
 
   @Mutation(() => InventoryItem, { description: '안전재고 임계치 설정' })
-  setReorderPoint(@Args('input') input: SetReorderPointInput): InventoryItem {
-    const key = getInventoryKey(input.storeId, input.sku);
-    const existing = inventoryItems.get(key);
+  async setReorderPoint(
+    @Args('input') input: SetReorderPointInput
+  ): Promise<InventoryItem> {
+    const entity = await this.inventoryItemRepository.findOne({
+      where: { storeId: input.storeId, sku: input.sku },
+    });
 
-    if (!existing) {
+    if (!entity) {
       throw new Error('재고 항목을 찾을 수 없습니다.');
     }
 
-    const updated: InventoryItem = {
-      ...existing,
-      reorderPoint: input.reorderPoint,
-      updatedAt: new Date().toISOString(),
-    };
-
-    inventoryItems.set(key, updated);
-    return updated;
+    entity.reorderPoint = input.reorderPoint;
+    const updated = await this.inventoryItemRepository.save(entity);
+    return this.mapInventoryItemEntityToModel(updated);
   }
 
   @Mutation(() => InventoryItem, { description: '재고 조정 (기존)' })
-  adjustInventory(
+  async adjustInventory(
     @Args('storeId', { type: () => ID }) storeId: string,
     @Args('sku', { type: () => ID }) sku: string,
     @Args('delta') delta: number,
     @Args('reason', { nullable: true }) reason?: string
-  ): InventoryItem {
-    const key = getInventoryKey(storeId, sku);
-    const existing = inventoryItems.get(key);
+  ): Promise<InventoryItem> {
+    const entity = await this.inventoryItemRepository.findOne({
+      where: { storeId, sku },
+    });
 
-    if (!existing) {
+    if (!entity) {
       throw new Error('재고 항목을 찾을 수 없습니다.');
     }
 
-    const newQuantity = existing.quantityOnHand + delta;
+    const newQuantity = Number(entity.quantityOnHand) + delta;
     if (newQuantity < 0) {
       throw new Error('재고 수량이 음수가 될 수 없습니다.');
     }
 
-    const updated: InventoryItem = {
-      ...existing,
-      quantityOnHand: newQuantity,
-      updatedAt: new Date().toISOString(),
-    };
-
-    inventoryItems.set(key, updated);
-    return updated;
+    entity.quantityOnHand = newQuantity;
+    const updated = await this.inventoryItemRepository.save(entity);
+    return this.mapInventoryItemEntityToModel(updated);
   }
 
   @Mutation(() => InventoryItem, { description: '재고 실사 (기존)' })
-  reconcileInventory(
+  async reconcileInventory(
     @Args('storeId', { type: () => ID }) storeId: string,
     @Args('sku', { type: () => ID }) sku: string,
     @Args('quantity') quantity: number,
     @Args('reason', { nullable: true }) reason?: string
-  ): InventoryItem {
+  ): Promise<InventoryItem> {
     // reconcileInventory는 submitInventoryCount와 동일한 로직
-    const key = getInventoryKey(storeId, sku);
-    const existing = inventoryItems.get(key);
-
-    const previousQuantity = existing?.quantityOnHand || 0;
-    const now = new Date().toISOString();
-
-    // 재고 실사 이력 기록
-    const audit: InventoryAudit = {
-      id: `AUDIT-${inventoryAudits.length + 1}`,
+    return this.submitInventoryCount({
       storeId,
       sku,
-      previousQuantity,
-      newQuantity: quantity,
-      auditDate: now,
-      performedBy: 'USER-001', // 실제로는 컨텍스트에서 가져옴
+      quantity,
       notes: reason,
+    });
+  }
+
+  // 엔티티를 GraphQL 모델로 변환
+  private mapInventoryItemEntityToModel(
+    entity: InventoryItemEntity
+  ): InventoryItem {
+    return {
+      storeId: entity.storeId,
+      sku: entity.sku,
+      quantityOnHand: Number(entity.quantityOnHand),
+      reserved: Number(entity.reserved),
+      reorderPoint: Number(entity.reorderPoint),
+      lastAuditAt: entity.lastAuditAt?.toISOString(),
+      updatedAt: entity.updatedAt.toISOString(),
     };
+  }
 
-    inventoryAudits.push(audit);
-
-    // 재고 업데이트
-    const inventoryItem: InventoryItem = {
-      storeId,
-      sku,
-      quantityOnHand: quantity,
-      reserved: existing?.reserved || 0,
-      reorderPoint: existing?.reorderPoint || 0,
-      lastAuditAt: now,
-      updatedAt: now,
+  private mapInventoryAuditEntityToModel(
+    entity: InventoryAuditEntity
+  ): InventoryAudit {
+    return {
+      id: entity.id,
+      storeId: entity.storeId,
+      sku: entity.sku,
+      previousQuantity: Number(entity.previousQuantity),
+      newQuantity: Number(entity.newQuantity),
+      auditDate: entity.auditDate.toISOString(),
+      performedBy: entity.performedBy,
+      notes: entity.notes,
     };
+  }
 
-    inventoryItems.set(key, inventoryItem);
-    return inventoryItem;
+  private mapProductEntityToModel(entity: ProductEntity): Product {
+    return {
+      id: entity.id,
+      name: entity.name,
+      description: entity.description,
+      unitPrice: Number(entity.unitPrice),
+      category: entity.category,
+      isActive: entity.isActive,
+      createdAt: entity.createdAt.toISOString(),
+      updatedAt: entity.updatedAt.toISOString(),
+    };
   }
 }
